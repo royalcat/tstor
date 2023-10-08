@@ -1,4 +1,5 @@
-distribyted-data
+tstor-data
 httpfs_vfsdata.go
 bin/
 coverage.out
+bin

@@ -2,10 +2,10 @@ name: docker
 
 on:
   push:
-    branches: 
+    branches:
       - master
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   main:
@@ -18,7 +18,7 @@ jobs:
         id: meta
         uses: crazy-max/ghaction-docker-meta@v5.0.0
         with:
-          images: distribyted/distribyted
+          images: tstor/tstor
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -27,16 +27,16 @@ jobs:
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3.0.0
-      
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
+
       - name: Login to DockerHub
-        uses: docker/login-action@v3.0.0 
+        uses: docker/login-action@v3.0.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      
+
       - name: Build and push
         id: docker_build
         uses: docker/build-push-action@v5.0.0
@@ -46,10 +46,10 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
-      
+
       - name: Update repo description
         uses: peter-evans/dockerhub-description@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          repository: distribyted/distribyted
+          repository: tstor/tstor

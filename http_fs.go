@@ -1,4 +1,4 @@
-package distribyted
+package tstor
 
 import (
 	"embed"

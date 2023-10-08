@@ -2,7 +2,7 @@
 
 VERSION := $(shell git describe --tags)
 BUILD := $(shell git rev-parse --short HEAD)
-BIN_OUTPUT ?= bin/distribyted-$(VERSION)-`go env GOOS`-`go env GOARCH``go env GOEXE`
+BIN_OUTPUT ?= bin/tstor-$(VERSION)-`go env GOOS`-`go env GOARCH``go env GOEXE`
 PROJECTNAME := $(shell basename "$(PWD)")
 
 # Use linker flags to provide version/build settings
@@ -13,7 +13,7 @@ MAKEFLAGS += --silent
 
 ## run: run from code.
 run:
-	go run cmd/distribyted/main.go examples/conf_example.yaml
+	go run cmd/tstor/main.go examples/conf_example.yaml
 
 ## build: build binary.
 build: go-generate go-build
@@ -28,7 +28,7 @@ test:
 
 go-build:
 	@echo "  >  Building binary on $(BIN_OUTPUT)..."
-	go build -o $(BIN_OUTPUT) -tags "release" -ldflags='$(LDFLAGS)' cmd/distribyted/main.go
+	go build -o $(BIN_OUTPUT) -tags "release" -ldflags='$(LDFLAGS)' cmd/tstor/main.go
 
 go-generate:
 	@echo "  >  Generating code files..."

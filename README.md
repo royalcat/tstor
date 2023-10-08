@@ -6,35 +6,36 @@
 [![GPL3 License][license-shield]][license-url]
 [![Coveralls][coveralls-shield]][coveralls-url]
 [![Docker Image][docker-pulls-shield]][docker-pulls-url]
+
 <!-- PROJECT LOGO -->
 <br />
 <p align="center">
-  <a href="https://github.com/distribyted/distribyted">
-    <img src="mkdocs/docs/images/distribyted_icon.png" alt="Logo" width="100">
+  <a href="https://git.kmsign.ru/royalcat/tstor">
+    <img src="mkdocs/docs/images/tstor_icon.png" alt="Logo" width="100">
   </a>
 
-  <h3 align="center">distribyted</h3>
+  <h3 align="center">tstor</h3>
 
   <p align="center">
     Torrent client with on-demand file downloading as a filesystem.
     <br />
     <br />
-    <a href="https://github.com/distribyted/distribyted/issues">Report a Bug</a>
+    <a href="https://git.kmsign.ru/royalcat/tstor/issues">Report a Bug</a>
     ·
-    <a href="https://github.com/distribyted/distribyted/issues">Request Feature</a>
+    <a href="https://git.kmsign.ru/royalcat/tstor/issues">Request Feature</a>
   </p>
 </p>
 
 ## About The Project
 
-![Distribyted Screen Shot][product-screenshot]
+![tstor Screen Shot][product-screenshot]
 
-Distribyted is an alternative torrent client. 
-It can expose torrent files as a standard FUSE, webDAV or HTTP endpoint and download them on demand, allowing random reads using a fixed amount of disk space. 
+tstor is an alternative torrent client.
+It can expose torrent files as a standard FUSE, webDAV or HTTP endpoint and download them on demand, allowing random reads using a fixed amount of disk space.
 
-Distribyted tries to make easier integrations with other applications using torrent files, presenting them as a standard filesystem. 
+tstor tries to make easier integrations with other applications using torrent files, presenting them as a standard filesystem.
 
-**Note that distribyted is in beta version, it is a proof of concept with a lot of bugs.**
+**Note that tstor is in beta version, it is a proof of concept with a lot of bugs.**
 
 ## Use Cases
 
@@ -52,7 +53,8 @@ Check [here][main-url] for further documentation.
 Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
 Some areas need more care than others:
-- Windows and macOS tests and compatibility. I don't have any easy way to test distribyted on these operating systems.
+
+- Windows and macOS tests and compatibility. I don't have any easy way to test tstor on these operating systems.
 - Web interface. Web development is not my _forte_.
 - Tutorials. Share with the community your use case!
 
@@ -62,7 +64,6 @@ Some areas need more care than others:
 - [Nwaples rardecode library, experimental branch][rardecode-repo-url]. The only go library that is able to seek over rar files and avoid to use `io.Discard`.
 - [Bodgit 7zip library][sevenzip-repo-url]. Amazing library to decode 7zip files.
 
-
 ## License
 
 Distributed under the GPL3 license. See `LICENSE` for more information.
@@ -70,23 +71,23 @@ Distributed under the GPL3 license. See `LICENSE` for more information.
 [sevenzip-repo-url]: https://github.com/bodgit/sevenzip
 [rardecode-repo-url]: https://github.com/nwaples/rardecode/tree/experimental
 [torrent-repo-url]: https://github.com/anacrolix/torrent
-[main-url]: https://distribyted.com
-[releases-shield]: https://img.shields.io/github/v/release/distribyted/distribyted.svg?style=flat-square
-[releases-url]: https://github.com/distribyted/distribyted/releases
-[docker-pulls-shield]:https://img.shields.io/docker/pulls/distribyted/distribyted.svg?style=flat-square
-[docker-pulls-url]:https://hub.docker.com/r/distribyted/distribyted
-[contributors-shield]: https://img.shields.io/github/contributors/distribyted/distribyted.svg?style=flat-square
-[contributors-url]: https://github.com/distribyted/distribyted/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/distribyted/distribyted.svg?style=flat-square
-[forks-url]: https://github.com/distribyted/distribyted/network/members
-[stars-shield]: https://img.shields.io/github/stars/distribyted/distribyted.svg?style=flat-square
-[stars-url]: https://github.com/distribyted/distribyted/stargazers
-[issues-shield]: https://img.shields.io/github/issues/distribyted/distribyted.svg?style=flat-square
-[issues-url]: https://github.com/distribyted/distribyted/issues
-[releases-url]: https://github.com/distribyted/distribyted/releases
-[license-shield]: https://img.shields.io/github/license/distribyted/distribyted.svg?style=flat-square
-[license-url]: https://github.com/distribyted/distribyted/blob/master/LICENSE
-[product-screenshot]: mkdocs/docs/images/distribyted.gif
-[example-config]: https://github.com/distribyted/distribyted/blob/master/examples/conf_example.yaml
-[coveralls-shield]: https://img.shields.io/coveralls/github/distribyted/distribyted?style=flat-square
-[coveralls-url]: https://coveralls.io/github/distribyted/distribyted
+[main-url]: https://tstor.com
+[releases-shield]: https://img.shields.io/github/v/release/tstor/tstor.svg?style=flat-square
+[releases-url]: https://git.kmsign.ru/royalcat/tstor/releases
+[docker-pulls-shield]: https://img.shields.io/docker/pulls/tstor/tstor.svg?style=flat-square
+[docker-pulls-url]: https://hub.docker.com/r/tstor/tstor
+[contributors-shield]: https://img.shields.io/github/contributors/tstor/tstor.svg?style=flat-square
+[contributors-url]: https://git.kmsign.ru/royalcat/tstor/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/tstor/tstor.svg?style=flat-square
+[forks-url]: https://git.kmsign.ru/royalcat/tstor/network/members
+[stars-shield]: https://img.shields.io/github/stars/tstor/tstor.svg?style=flat-square
+[stars-url]: https://git.kmsign.ru/royalcat/tstor/stargazers
+[issues-shield]: https://img.shields.io/github/issues/tstor/tstor.svg?style=flat-square
+[issues-url]: https://git.kmsign.ru/royalcat/tstor/issues
+[releases-url]: https://git.kmsign.ru/royalcat/tstor/releases
+[license-shield]: https://img.shields.io/github/license/tstor/tstor.svg?style=flat-square
+[license-url]: https://git.kmsign.ru/royalcat/tstor/blob/master/LICENSE
+[product-screenshot]: mkdocs/docs/images/tstor.gif
+[example-config]: https://git.kmsign.ru/royalcat/tstor/blob/master/examples/conf_example.yaml
+[coveralls-shield]: https://img.shields.io/coveralls/github/tstor/tstor?style=flat-square
+[coveralls-url]: https://coveralls.io/github/tstor/tstor

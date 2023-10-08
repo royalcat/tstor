@@ -4,21 +4,21 @@
 
 Get the latest release from [releases][releases-url] page or download the source code and execute `make build`.
 
-Run the program: `./distribyted-[VERSION]-[OS]-[ARCH]`
+Run the program: `./tstor-[VERSION]-[OS]-[ARCH]`
 
-Defaults are good enough for starters, but you can change them. Here is the output of `./distribyted -help`:
+Defaults are good enough for starters, but you can change them. Here is the output of `./tstor -help`:
 
 ```text
 NAME:
-   distribyted - Torrent client with on-demand file downloading as a filesystem.
+   tstor - Torrent client with on-demand file downloading as a filesystem.
 
 USAGE:
-   distribyted [global options] [arguments...]
+   tstor [global options] [arguments...]
 
 GLOBAL OPTIONS:
-   --config value      YAML file containing distribyted configuration. (default: "./distribyted-data/config.yaml") [$DISTRIBYTED_CONFIG]
-   --http-port value   HTTP port for web interface (default: 4444) [$DISTRIBYTED_HTTP_PORT]
-   --fuse-allow-other  Allow other users to acces to all fuse mountpoints. You need to add user_allow_other flag to /etc/fuse.conf file. (default: false) [$DISTRIBYTED_FUSE_ALLOW_OTHER]
+   --config value      YAML file containing tstor configuration. (default: "./tstor-data/config.yaml") [$tstor_CONFIG]
+   --http-port value   HTTP port for web interface (default: 4444) [$tstor_HTTP_PORT]
+   --fuse-allow-other  Allow other users to acces to all fuse mountpoints. You need to add user_allow_other flag to /etc/fuse.conf file. (default: false) [$tstor_FUSE_ALLOW_OTHER]
    --help, -h          show help (default: false)
 ```
 
@@ -36,32 +36,32 @@ docker run \
   --cap-add SYS_ADMIN \
   --device /dev/fuse \
   --security-opt apparmor:unconfined \
-  -v /tmp/mount:/distribyted-data/mount:shared \
-  -v /tmp/metadata:/distribyted-data/metadata \
-  -v /tmp/config:/distribyted-data/config \
-  distribyted/distribyted:latest
+  -v /tmp/mount:/tstor-data/mount:shared \
+  -v /tmp/metadata:/tstor-data/metadata \
+  -v /tmp/config:/tstor-data/config \
+  tstor/tstor:latest
 ```
 
 Docker compose example:
 
 ```yaml
-distribyted:
-    container_name: distribyted
-    image: distribyted/distribyted:latest
-    restart: always
-    ports:
-      - "4444:4444/tcp"
-      - "36911:36911/tcp"
-    volumes:
-      - /home/user/mount:/distribyted-data/mount:shared
-      - /home/user/metadata:/distribyted-data/metadata
-      - /home/user/config:/distribyted-data/config
-    security_opt:
-      - apparmor:unconfined
-    devices:
-      - /dev/fuse
-    cap_add:
-      - SYS_ADMIN
+tstor:
+  container_name: tstor
+  image: tstor/tstor:latest
+  restart: always
+  ports:
+    - "4444:4444/tcp"
+    - "36911:36911/tcp"
+  volumes:
+    - /home/user/mount:/tstor-data/mount:shared
+    - /home/user/metadata:/tstor-data/metadata
+    - /home/user/config:/tstor-data/config
+  security_opt:
+    - apparmor:unconfined
+  devices:
+    - /dev/fuse
+  cap_add:
+    - SYS_ADMIN
 ```
 
 ## Usage
@@ -71,25 +71,25 @@ It contains information about the mounted routes and torrent files like download
 
 ### Configuration File
 
-You can see the default configuration file with some explanation comments [here](https://github.com/distribyted/distribyted/blob/master/templates/config_template.yaml).
+You can see the default configuration file with some explanation comments [here](https://git.kmsign.ru/royalcat/tstor/blob/master/templates/config_template.yaml).
 
 ### Routes
 
 Here there is a list of all available routes with their torrents and some info. You can add and remove torrents from here too.
 
-![routes screen](images/distribyted-routes-border-large.png)
+![routes screen](images/tstor-routes-border-large.png)
 
 ### Servers
 
-Servers is a way to generate magnet files from folders. 
-All servers configured using the config yaml file will be here. 
-When some data is changed on these folders, a new magnet URI will be generated. 
+Servers is a way to generate magnet files from folders.
+All servers configured using the config yaml file will be here.
+When some data is changed on these folders, a new magnet URI will be generated.
 You can share that magnet URI with anyone to share these files.
 
-![server screen](images/distribyted-server-border.png)
+![server screen](images/tstor-server-border.png)
 
 ### Logs
 
 You can check logs in real time from the web interface:
 
-![logs screen](images/distribyted-logs-border.png)
+![logs screen](images/tstor-logs-border.png)
