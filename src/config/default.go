@@ -1,12 +1,5 @@
 package config
 
-const (
-	metadataFolder = "./tstor-data/metadata"
-	mountFolder    = "./tstor-data/mount"
-	logsFolder     = "./tstor-data/logs"
-	serverFolder   = "./tstor-data/served-folders/server"
-)
-
 var defaultConfig = Config{
 	WebUi: WebUi{
 		Port: 4444,
@@ -24,21 +17,22 @@ var defaultConfig = Config{
 			Pass:    "admin",
 		},
 		Fuse: Fuse{
-			Enabled:    false,
-			AllowOther: false,
-			Path:       mountFolder,
+			Enabled: false,
 		},
 	},
 
 	TorrentClient: TorrentClient{
-		GlobalCacheSize: 2048,
-		MetadataFolder:  metadataFolder,
-		AddTimeout:      60,
-		ReadTimeout:     120,
+		DataFolder:     "data",
+		MetadataFolder: "metadata",
+
+		// GlobalCacheSize: 2048,
+
+		AddTimeout:  60,
+		ReadTimeout: 120,
 	},
 
 	Log: Log{
-		Path:       logsFolder,
+		Path:       "/tmp/tstor",
 		MaxBackups: 2,
 		MaxSize:    50,
 	},
@@ -69,7 +63,7 @@ var defaultRoutes = []Route{
 var defaultServers = []Server{
 	{
 		Name: "server",
-		Path: serverFolder,
+		Path: "server",
 		Trackers: []string{
 			"wss://tracker.btorrent.xyz",
 			"wss://tracker.openwebtorrent.com",

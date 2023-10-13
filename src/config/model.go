@@ -22,11 +22,15 @@ type Log struct {
 }
 
 type TorrentClient struct {
-	ReadTimeout     int    `koanf:"read_timeout,omitempty"`
-	AddTimeout      int    `koanf:"add_timeout,omitempty"`
-	GlobalCacheSize int64  `koanf:"global_cache_size,omitempty"`
-	MetadataFolder  string `koanf:"metadata_folder,omitempty"`
-	DisableIPv6     bool   `koanf:"disable_ipv6,omitempty"`
+	ReadTimeout int `koanf:"read_timeout,omitempty"`
+	AddTimeout  int `koanf:"add_timeout,omitempty"`
+
+	DisableIPv6 bool `koanf:"disable_ipv6,omitempty"`
+
+	DataFolder     string `koanf:"data_folder,omitempty"`
+	MetadataFolder string `koanf:"metadata_folder,omitempty"`
+
+	// GlobalCacheSize int64 `koanf:"global_cache_size,omitempty"`
 
 	Routes  []Route  `koanf:"routes"`
 	Servers []Server `koanf:"servers"`

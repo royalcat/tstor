@@ -24,9 +24,9 @@ func Load(path string) (*Config, error) {
 		_ = k.Load(file.Provider(path), yaml.Parser()) // its ok if file doesnt exist
 	}
 
-	err = k.Load(env.Provider("tstor_", ".", func(s string) string {
+	err = k.Load(env.Provider("TSTOR_", ".", func(s string) string {
 		return strings.Replace(strings.ToLower(
-			strings.TrimPrefix(s, "tstor_")), "_", ".", -1)
+			strings.TrimPrefix(s, "TSTOR_")), "_", ".", -1)
 	}), nil)
 	if err != nil {
 		return nil, err

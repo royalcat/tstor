@@ -66,7 +66,7 @@ func main() {
 }
 
 func setupStorage(tcfg config.TorrentClient) (storage.ClientImplCloser, storage.PieceCompletion, error) {
-	pcp := filepath.Join(tcfg.MetadataFolder, "piece-completion")
+	pcp := filepath.Join(tcfg.DataFolder, "piece-completion")
 	if err := os.MkdirAll(pcp, 0744); err != nil {
 		return nil, nil, fmt.Errorf("error creating piece completion folder: %w", err)
 	}
@@ -87,7 +87,7 @@ func setupStorage(tcfg config.TorrentClient) (storage.ClientImplCloser, storage.
 	// log.Info().Msg(fmt.Sprintf("setting cache size to %d MB", tcfg.GlobalCacheSize))
 	// fc.SetCapacity(tcfg.GlobalCacheSize * 1024 * 1024)
 
-	filesDir := filepath.Join(tcfg.MetadataFolder, "files")
+	filesDir := filepath.Join(tcfg.DataFolder, "files")
 	if err := os.MkdirAll(pcp, 0744); err != nil {
 		return nil, nil, fmt.Errorf("error creating piece completion folder: %w", err)
 	}

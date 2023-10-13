@@ -2,7 +2,7 @@
 # Stage 1: Build
 #===============
 
-FROM golang:1.20-alpine as builder
+FROM golang:1.20 as builder
 
 ENV BIN_REPO=git.kmsign.ru/royalcat/tstor
 ENV BIN_PATH=$GOPATH/src/$BIN_REPO
