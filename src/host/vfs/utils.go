@@ -9,7 +9,7 @@ import (
 var ErrNotExist = fs.ErrNotExist
 
 func getFile[F File](m map[string]F, name string) (File, error) {
-	name = Clean(name)
+	name = clean(name)
 	if name == Separator {
 		return &Dir{}, nil
 	}
@@ -29,7 +29,7 @@ func getFile[F File](m map[string]F, name string) (File, error) {
 }
 
 func listFilesInDir[F File](m map[string]F, name string) (map[string]File, error) {
-	name = Clean(name)
+	name = clean(name)
 
 	out := map[string]File{}
 	for p, f := range m {
@@ -50,6 +50,6 @@ func trimRelPath(p, t string) string {
 	return strings.Trim(strings.TrimPrefix(p, t), "/")
 }
 
-func Clean(p string) string {
+func clean(p string) string {
 	return path.Clean(Separator + strings.ReplaceAll(p, "\\", "/"))
 }

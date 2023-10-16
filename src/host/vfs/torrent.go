@@ -33,7 +33,7 @@ func (fs *TorrentFs) files() map[string]*torrentFile {
 	files := make(map[string]*torrentFile)
 	<-fs.t.GotInfo()
 	for _, file := range fs.t.Files() {
-		p := Clean(file.Path())
+		p := clean(file.Path())
 		files[p] = &torrentFile{
 			readerFunc: file.NewReader,
 			len:        file.Length(),

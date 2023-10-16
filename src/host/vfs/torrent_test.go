@@ -85,6 +85,8 @@ func TestMain(m *testing.M) {
 // }
 
 func TestReadAtTorrent(t *testing.T) {
+	t.Parallel()
+
 	require := require.New(t)
 
 	to, err := Cli.AddMagnet(testMagnet)

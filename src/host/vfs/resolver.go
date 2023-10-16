@@ -88,11 +88,11 @@ PARTS_LOOP:
 	}
 
 	if nestOn == -1 {
-		return name, nil, "", nil
+		return clean(name), nil, "", nil
 	}
 
-	fsPath = Clean(strings.Join(parts[:nestOn], Separator))
-	nestedFsPath = Clean(strings.Join(parts[nestOn:], Separator))
+	fsPath = clean(strings.Join(parts[:nestOn], Separator))
+	nestedFsPath = clean(strings.Join(parts[nestOn:], Separator))
 
 	// we dont need lock until now
 	// it must be before fsmap read to exclude race condition:
