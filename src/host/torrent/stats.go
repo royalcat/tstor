@@ -2,7 +2,6 @@ package torrent
 
 import (
 	"errors"
-	"sort"
 	"sync"
 	"time"
 
@@ -73,65 +72,42 @@ type stat struct {
 }
 
 type Stats struct {
-	mut             sync.Mutex
-	torrents        map[string]*torrent.Torrent
-	torrentsByRoute map[string]map[string]*torrent.Torrent
-	previousStats   map[string]*stat
+	mut           sync.Mutex
+	torrents      map[string]*torrent.Torrent
+	previousStats map[string]*stat
 
 	gTime time.Time
 }
 
-func NewStats() *Stats {
+func newStats() *Stats {
 	return &Stats{
-		gTime:           time.Now(),
-		torrents:        make(map[string]*torrent.Torrent),
-		torrentsByRoute: make(map[string]map[string]*torrent.Torrent),
-		previousStats:   make(map[string]*stat),
+		gTime:    time.Now(),
+		torrents: make(map[string]*torrent.Torrent),
+		// torrentsByRoute: make(map[string]map[string]*torrent.Torrent),
+		// previousStats:   make(map[string]*stat),
 	}
 }
 
-func (s *Stats) AddRoute(route string) {
-	_, ok := s.torrentsByRoute[route]
-	if !ok {
-		s.torrentsByRoute[route] = make(map[string]*torrent.Torrent)
-	}
-}
-
-func (s *Stats) Add(route string, t *torrent.Torrent) {
+func (s *Stats) Add(path string, t *torrent.Torrent) {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
-	h := t.InfoHash().String()
-
-	s.torrents[h] = t
-	s.previousStats[h] = &stat{}
-
-	_, ok := s.torrentsByRoute[route]
-	if !ok {
-		s.torrentsByRoute[route] = make(map[string]*torrent.Torrent)
-	}
-
-	s.torrentsByRoute[route][h] = t
+	s.torrents[path] = t
+	s.previousStats[path] = &stat{}
 }
 
-func (s *Stats) Del(route, hash string) {
+func (s *Stats) Del(path string) {
 	s.mut.Lock()
 	defer s.mut.Unlock()
-	delete(s.torrents, hash)
-	delete(s.previousStats, hash)
-	ts, ok := s.torrentsByRoute[route]
-	if !ok {
-		return
-	}
-
-	delete(ts, hash)
+	delete(s.torrents, path)
+	delete(s.previousStats, path)
 }
 
-func (s *Stats) Stats(hash string) (*TorrentStats, error) {
+func (s *Stats) Stats(path string) (*TorrentStats, error) {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
-	t, ok := s.torrents[hash]
+	t, ok := s.torrents[path]
 	if !(ok) {
 		return nil, ErrTorrentNotFound
 	}
@@ -139,32 +115,6 @@ func (s *Stats) Stats(hash string) (*TorrentStats, error) {
 	now := time.Now()
 
 	return s.stats(now, t, true), nil
-}
-
-func (s *Stats) RoutesStats() []*RouteStats {
-	s.mut.Lock()
-	defer s.mut.Unlock()
-
-	now := time.Now()
-
-	var out []*RouteStats
-	for r, tl := range s.torrentsByRoute {
-		var tStats []*TorrentStats
-		for _, t := range tl {
-			ts := s.stats(now, t, true)
-			tStats = append(tStats, ts)
-		}
-
-		sort.Sort(byName(tStats))
-
-		rs := &RouteStats{
-			Name:         r,
-			TorrentStats: tStats,
-		}
-		out = append(out, rs)
-	}
-
-	return out
 }
 
 func (s *Stats) GlobalStats() *GlobalTorrentStats {

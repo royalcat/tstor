@@ -1,6 +1,7 @@
 package config
 
 var defaultConfig = Config{
+	DataFolder: "./data",
 	WebUi: WebUi{
 		Port: 4444,
 		IP:   "0.0.0.0",
@@ -22,8 +23,9 @@ var defaultConfig = Config{
 	},
 
 	TorrentClient: TorrentClient{
-		DataFolder:     "data",
-		MetadataFolder: "metadata",
+		DataFolder:     "./torrent/data",
+		MetadataFolder: "./torrent/metadata",
+		DHTNodes:       []string{},
 
 		// GlobalCacheSize: 2048,
 

@@ -1,4 +1,4 @@
-package fs
+package vfs
 
 import (
 	"context"
@@ -11,71 +11,66 @@ import (
 	"github.com/anacrolix/torrent"
 )
 
-var _ Filesystem = &Torrent{}
+var _ Filesystem = &TorrentFs{}
 
-type Torrent struct {
+type TorrentFs struct {
 	mu          sync.RWMutex
-	ts          map[string]*torrent.Torrent
-	s           *storage
-	loaded      bool
+	t           *torrent.Torrent
 	readTimeout int
+
+	resolver *resolver
 }
 
-func NewTorrent(readTimeout int) *Torrent {
-	return &Torrent{
-		s:           newStorage(SupportedFactories),
-		ts:          make(map[string]*torrent.Torrent),
+func NewTorrentFs(t *torrent.Torrent, readTimeout int) *TorrentFs {
+	return &TorrentFs{
+		t:           t,
 		readTimeout: readTimeout,
+		resolver:    newResolver(ArchiveFactories),
 	}
 }
 
-func (fs *Torrent) AddTorrent(t *torrent.Torrent) {
-	fs.mu.Lock()
-	defer fs.mu.Unlock()
-	fs.loaded = false
-	fs.ts[t.InfoHash().HexString()] = t
-}
-
-func (fs *Torrent) RemoveTorrent(h string) {
-	fs.mu.Lock()
-	defer fs.mu.Unlock()
-
-	fs.s.Clear()
-
-	fs.loaded = false
-
-	delete(fs.ts, h)
-}
-
-func (fs *Torrent) load() {
-	if fs.loaded {
-		return
-	}
-	fs.mu.RLock()
-	defer fs.mu.RUnlock()
-
-	for _, t := range fs.ts {
-		<-t.GotInfo()
-		for _, file := range t.Files() {
-			fs.s.Add(&torrentFile{
-				readerFunc: file.NewReader,
-				len:        file.Length(),
-				timeout:    fs.readTimeout,
-			}, file.Path())
+func (fs *TorrentFs) files() map[string]*torrentFile {
+	files := make(map[string]*torrentFile)
+	<-fs.t.GotInfo()
+	for _, file := range fs.t.Files() {
+		p := Clean(file.Path())
+		files[p] = &torrentFile{
+			readerFunc: file.NewReader,
+			len:        file.Length(),
+			timeout:    fs.readTimeout,
 		}
 	}
 
-	fs.loaded = true
+	return files
 }
 
-func (fs *Torrent) Open(filename string) (File, error) {
-	fs.load()
-	return fs.s.Get(filename)
+func (fs *TorrentFs) rawOpen(path string) (File, error) {
+	file, err := getFile(fs.files(), path)
+	return file, err
 }
 
-func (fs *Torrent) ReadDir(path string) (map[string]File, error) {
-	fs.load()
-	return fs.s.Children(path)
+func (fs *TorrentFs) Open(filename string) (File, error) {
+	fsPath, nestedFs, nestedFsPath, err := fs.resolver.resolvePath(filename, fs.rawOpen)
+	if err != nil {
+		return nil, err
+	}
+	if nestedFs != nil {
+		return nestedFs.Open(nestedFsPath)
+	}
+
+	return fs.rawOpen(fsPath)
+}
+
+func (fs *TorrentFs) ReadDir(name string) (map[string]File, error) {
+	fsPath, nestedFs, nestedFsPath, err := fs.resolver.resolvePath(name, fs.rawOpen)
+	if err != nil {
+		return nil, err
+	}
+	if nestedFs != nil {
+		return nestedFs.ReadDir(nestedFsPath)
+	}
+
+	return listFilesInDir(fs.files(), fsPath)
 }
 
 type reader interface {
@@ -93,7 +88,9 @@ type readAtWrapper struct {
 }
 
 func newReadAtWrapper(r torrent.Reader, timeout int) reader {
-	return &readAtWrapper{Reader: r, timeout: timeout}
+	w := &readAtWrapper{Reader: r, timeout: timeout}
+	w.SetResponsive()
+	return w
 }
 
 func (rw *readAtWrapper) ReadAt(p []byte, off int64) (int, error) {

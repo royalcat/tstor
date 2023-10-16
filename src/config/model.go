@@ -6,6 +6,8 @@ type Config struct {
 	TorrentClient TorrentClient `koanf:"torrent"`
 	Mounts        Mounts        `koanf:"mounts"`
 	Log           Log           `koanf:"log"`
+
+	DataFolder string `koanf:"dataFolder"`
 }
 
 type WebUi struct {
@@ -25,7 +27,8 @@ type TorrentClient struct {
 	ReadTimeout int `koanf:"read_timeout,omitempty"`
 	AddTimeout  int `koanf:"add_timeout,omitempty"`
 
-	DisableIPv6 bool `koanf:"disable_ipv6,omitempty"`
+	DHTNodes    []string `koanf:"dhtnodes,omitempty"`
+	DisableIPv6 bool     `koanf:"disable_ipv6,omitempty"`
 
 	DataFolder     string `koanf:"data_folder,omitempty"`
 	MetadataFolder string `koanf:"metadata_folder,omitempty"`

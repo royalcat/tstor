@@ -7,7 +7,7 @@ import (
 	"os"
 	"sync"
 
-	"git.kmsign.ru/royalcat/tstor/src/fs"
+	"git.kmsign.ru/royalcat/tstor/src/host/vfs"
 	"github.com/billziss-gh/cgofuse/fuse"
 
 	"github.com/rs/zerolog"
@@ -21,7 +21,7 @@ type FS struct {
 	log zerolog.Logger
 }
 
-func NewFS(fs fs.Filesystem) fuse.FileSystemInterface {
+func NewFS(fs vfs.Filesystem) fuse.FileSystemInterface {
 	l := log.Logger.With().Str("component", "fuse").Logger()
 	return &FS{
 		fh:  &fileHandler{fs: fs},
@@ -154,11 +154,11 @@ var ErrBadHolderIndex = errors.New("holder index too big")
 
 type fileHandler struct {
 	mu     sync.RWMutex
-	opened []fs.File
-	fs     fs.Filesystem
+	opened []vfs.File
+	fs     vfs.Filesystem
 }
 
-func (fh *fileHandler) GetFile(path string, fhi uint64) (fs.File, error) {
+func (fh *fileHandler) GetFile(path string, fhi uint64) (vfs.File, error) {
 	fh.mu.RLock()
 	defer fh.mu.RUnlock()
 
@@ -204,7 +204,7 @@ func (fh *fileHandler) OpenHolder(path string) (uint64, error) {
 	return uint64(len(fh.opened) - 1), nil
 }
 
-func (fh *fileHandler) get(fhi uint64) (fs.File, error) {
+func (fh *fileHandler) get(fhi uint64) (vfs.File, error) {
 	if int(fhi) >= len(fh.opened) {
 		return nil, ErrBadHolderIndex
 	}
@@ -240,7 +240,7 @@ func (fh *fileHandler) Remove(fhi uint64) error {
 	return nil
 }
 
-func (fh *fileHandler) lookupFile(path string) (fs.File, error) {
+func (fh *fileHandler) lookupFile(path string) (vfs.File, error) {
 	file, err := fh.fs.Open(path)
 	if err != nil {
 		return nil, err

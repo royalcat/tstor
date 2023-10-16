@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"git.kmsign.ru/royalcat/tstor/src/fs"
+	"git.kmsign.ru/royalcat/tstor/src/host/vfs"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,12 +22,11 @@ func TestHandler(t *testing.T) {
 
 	h := NewHandler(false, p)
 
-	mem := fs.NewMemory()
+	mem := vfs.NewMemoryFS(map[string]*vfs.MemoryFile{
+		"/test.txt": vfs.NewMemoryFile([]byte("test")),
+	})
 
-	err := mem.Storage.Add(fs.NewMemoryFile([]byte("test")), "/test.txt")
-	require.NoError(err)
-
-	err = h.Mount(map[string]fs.Filesystem{"/mem": mem})
+	err := h.Mount(mem)
 	require.NoError(err)
 
 	time.Sleep(5 * time.Second)
@@ -50,12 +49,11 @@ func TestHandlerDriveLetter(t *testing.T) {
 
 	h := NewHandler(false, p)
 
-	mem := fs.NewMemory()
+	mem := vfs.NewMemoryFS(map[string]*vfs.MemoryFile{
+		"/test.txt": vfs.NewMemoryFile([]byte("test")),
+	})
 
-	err := mem.Storage.Add(fs.NewMemoryFile([]byte("test")), "/test.txt")
-	require.NoError(err)
-
-	err = h.Mount(map[string]fs.Filesystem{"/mem": mem})
+	err := h.Mount(mem)
 	require.NoError(err)
 
 	time.Sleep(5 * time.Second)

@@ -6,14 +6,14 @@ import (
 
 	"git.kmsign.ru/royalcat/tstor"
 	"git.kmsign.ru/royalcat/tstor/src/config"
-	"git.kmsign.ru/royalcat/tstor/src/torrent"
+	"git.kmsign.ru/royalcat/tstor/src/host/torrent"
 	"github.com/anacrolix/missinggo/v2/filecache"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 	"github.com/shurcooL/httpfs/html/vfstemplate"
 )
 
-func New(fc *filecache.Cache, ss *torrent.Stats, s *torrent.Service, ch *config.Config, tss []*torrent.Server, fs http.FileSystem, logPath string, cfg *config.Config) error {
+func New(fc *filecache.Cache, ss *torrent.Stats, s *torrent.Service, logPath string, cfg *config.Config) error {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 	r.Use(gin.Recovery())
@@ -24,14 +24,6 @@ func New(fc *filecache.Cache, ss *torrent.Stats, s *torrent.Service, ch *config.
 		c.FileFromFS(c.Request.URL.Path, http.FS(tstor.Assets))
 	})
 
-	if cfg.Mounts.HttpFs.Enabled {
-		log.Info().Str("host", fmt.Sprintf("0.0.0.0:%d/fs", cfg.Mounts.HttpFs.Port)).Msg("starting HTTPFS")
-		r.GET("/fs/*filepath", func(c *gin.Context) {
-			path := c.Param("filepath")
-			c.FileFromFS(path, fs)
-		})
-	}
-
 	t, err := vfstemplate.ParseGlob(http.FS(tstor.Templates), nil, "/templates/*")
 	if err != nil {
 		return fmt.Errorf("error parsing html: %w", err)
@@ -40,7 +32,7 @@ func New(fc *filecache.Cache, ss *torrent.Stats, s *torrent.Service, ch *config.
 	r.SetHTMLTemplate(t)
 
 	r.GET("/", indexHandler)
-	r.GET("/routes", routesHandler(ss))
+	// r.GET("/routes", routesHandler(ss))
 	r.GET("/logs", logsHandler)
 	r.GET("/servers", serversFoldersHandler())
 
@@ -48,11 +40,11 @@ func New(fc *filecache.Cache, ss *torrent.Stats, s *torrent.Service, ch *config.
 	{
 		api.GET("/log", apiLogHandler(logPath))
 		api.GET("/status", apiStatusHandler(fc, ss))
-		api.GET("/servers", apiServersHandler(tss))
+		// api.GET("/servers", apiServersHandler(tss))
 
-		api.GET("/routes", apiRoutesHandler(ss))
-		api.POST("/routes/:route/torrent", apiAddTorrentHandler(s))
-		api.DELETE("/routes/:route/torrent/:torrent_hash", apiDelTorrentHandler(s))
+		// api.GET("/routes", apiRoutesHandler(ss))
+		// api.POST("/routes/:route/torrent", apiAddTorrentHandler(s))
+		// api.DELETE("/routes/:route/torrent/:torrent_hash", apiDelTorrentHandler(s))
 
 	}
 

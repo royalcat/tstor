@@ -3,12 +3,12 @@ package webdav
 import (
 	"net/http"
 
-	"git.kmsign.ru/royalcat/tstor/src/fs"
+	"git.kmsign.ru/royalcat/tstor/src/host/vfs"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/net/webdav"
 )
 
-func newHandler(fs fs.Filesystem) *webdav.Handler {
+func newHandler(fs vfs.Filesystem) *webdav.Handler {
 	l := log.Logger.With().Str("component", "webDAV").Logger()
 	return &webdav.Handler{
 		Prefix:     "/",

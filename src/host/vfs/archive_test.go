@@ -1,4 +1,4 @@
-package fs
+package vfs
 
 import (
 	"archive/zip"
@@ -18,7 +18,7 @@ func TestZipFilesystem(t *testing.T) {
 
 	zReader, len := createTestZip(require)
 
-	zfs := NewArchive(zReader, len, &Zip{})
+	zfs := NewArchive(zReader, len, ZipLoader)
 
 	files, err := zfs.ReadDir("/path/to/test/file")
 	require.NoError(err)

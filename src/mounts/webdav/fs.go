@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"git.kmsign.ru/royalcat/tstor/src/fs"
+	"git.kmsign.ru/royalcat/tstor/src/host/vfs"
 	"git.kmsign.ru/royalcat/tstor/src/iio"
 	"golang.org/x/net/webdav"
 )
@@ -16,10 +16,10 @@ import (
 var _ webdav.FileSystem = &WebDAV{}
 
 type WebDAV struct {
-	fs fs.Filesystem
+	fs vfs.Filesystem
 }
 
-func newFS(fs fs.Filesystem) *WebDAV {
+func newFS(fs vfs.Filesystem) *WebDAV {
 	return &WebDAV{fs: fs}
 }
 
@@ -59,7 +59,7 @@ func (wd *WebDAV) Rename(ctx context.Context, oldName, newName string) error {
 	return webdav.ErrNotImplemented
 }
 
-func (wd *WebDAV) lookupFile(path string) (fs.File, error) {
+func (wd *WebDAV) lookupFile(path string) (vfs.File, error) {
 	return wd.fs.Open(path)
 }
 
@@ -93,7 +93,7 @@ type webDAVFile struct {
 	dirContent []os.FileInfo
 }
 
-func newFile(name string, f fs.File, df func() ([]os.FileInfo, error)) *webDAVFile {
+func newFile(name string, f vfs.File, df func() ([]os.FileInfo, error)) *webDAVFile {
 	return &webDAVFile{
 		fi:      newFileInfo(name, f.Size(), f.IsDir()),
 		dirFunc: df,

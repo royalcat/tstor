@@ -3,7 +3,6 @@ package http
 import (
 	"net/http"
 
-	"git.kmsign.ru/royalcat/tstor/src/torrent"
 	"github.com/gin-gonic/gin"
 )
 
@@ -11,11 +10,11 @@ var indexHandler = func(c *gin.Context) {
 	c.HTML(http.StatusOK, "index.html", nil)
 }
 
-var routesHandler = func(ss *torrent.Stats) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.HTML(http.StatusOK, "routes.html", ss.RoutesStats())
-	}
-}
+// var routesHandler = func(ss *torrent.Stats) gin.HandlerFunc {
+// 	return func(c *gin.Context) {
+// 		c.HTML(http.StatusOK, "routes.html", ss.RoutesStats())
+// 	}
+// }
 
 var logsHandler = func(c *gin.Context) {
 	c.HTML(http.StatusOK, "logs.html", nil)

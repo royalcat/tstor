@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"git.kmsign.ru/royalcat/tstor/src/fs"
+	"git.kmsign.ru/royalcat/tstor/src/host/vfs"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/webdav"
 )
@@ -16,10 +16,9 @@ func TestWebDAVFilesystem(t *testing.T) {
 
 	require := require.New(t)
 
-	mfs := fs.NewMemory()
-	mf := fs.NewMemoryFile([]byte("test file content."))
-	err := mfs.Storage.Add(mf, "/folder/file.txt")
-	require.NoError(err)
+	mfs := vfs.NewMemoryFS(map[string]*vfs.MemoryFile{
+		"/folder/file.txt": vfs.NewMemoryFile([]byte("test file content.")),
+	})
 
 	wfs := newFS(mfs)
 
@@ -67,10 +66,9 @@ func TestErrNotImplemented(t *testing.T) {
 
 	require := require.New(t)
 
-	mfs := fs.NewMemory()
-	mf := fs.NewMemoryFile([]byte("test file content."))
-	err := mfs.Storage.Add(mf, "/folder/file.txt")
-	require.NoError(err)
+	mfs := vfs.NewMemoryFS(map[string]*vfs.MemoryFile{
+		"/folder/file.txt": vfs.NewMemoryFile([]byte("test file content.")),
+	})
 
 	wfs := newFS(mfs)
 

@@ -1,4 +1,4 @@
-package fs
+package vfs
 
 var _ File = &Dir{}
 

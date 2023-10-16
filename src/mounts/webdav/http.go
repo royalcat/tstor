@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"git.kmsign.ru/royalcat/tstor/src/fs"
+	"git.kmsign.ru/royalcat/tstor/src/host/vfs"
 	"github.com/rs/zerolog/log"
 )
 
-func NewWebDAVServer(fs fs.Filesystem, port int, user, pass string) error {
+func NewWebDAVServer(fs vfs.Filesystem, port int, user, pass string) error {
 	log.Info().Str("host", fmt.Sprintf("0.0.0.0:%d", port)).Msg("starting webDAV server")
 
 	srv := newHandler(fs)

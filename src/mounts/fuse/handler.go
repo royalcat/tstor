@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"git.kmsign.ru/royalcat/tstor/src/fs"
+	"git.kmsign.ru/royalcat/tstor/src/host/vfs"
 	"github.com/billziss-gh/cgofuse/fuse"
 
 	"github.com/rs/zerolog/log"
@@ -25,7 +25,7 @@ func NewHandler(fuseAllowOther bool, path string) *Handler {
 	}
 }
 
-func (s *Handler) Mount(fss map[string]fs.Filesystem) error {
+func (s *Handler) Mount(vfs vfs.Filesystem) error {
 	folder := s.path
 	// On windows, the folder must don't exist
 	if runtime.GOOS == "windows" {
@@ -38,12 +38,7 @@ func (s *Handler) Mount(fss map[string]fs.Filesystem) error {
 		}
 	}
 
-	cfs, err := fs.NewContainerFs(fss)
-	if err != nil {
-		return err
-	}
-
-	host := fuse.NewFileSystemHost(NewFS(cfs))
+	host := fuse.NewFileSystemHost(NewFS(vfs))
 
 	// TODO improve error handling here
 	go func() {

@@ -1,27 +1,27 @@
-package fs
+package vfs
 
 import (
 	"bytes"
 )
 
-var _ Filesystem = &Memory{}
+var _ Filesystem = &MemoryFs{}
 
-type Memory struct {
-	Storage *storage
+type MemoryFs struct {
+	files map[string]*MemoryFile
 }
 
-func NewMemory() *Memory {
-	return &Memory{
-		Storage: newStorage(nil),
+func NewMemoryFS(files map[string]*MemoryFile) *MemoryFs {
+	return &MemoryFs{
+		files: files,
 	}
 }
 
-func (fs *Memory) Open(filename string) (File, error) {
-	return fs.Storage.Get(filename)
+func (m *MemoryFs) Open(filename string) (File, error) {
+	return getFile(m.files, filename)
 }
 
-func (fs *Memory) ReadDir(path string) (map[string]File, error) {
-	return fs.Storage.Children(path)
+func (fs *MemoryFs) ReadDir(path string) (map[string]File, error) {
+	return listFilesInDir(fs.files, path)
 }
 
 var _ File = &MemoryFile{}

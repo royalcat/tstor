@@ -7,17 +7,17 @@ import (
 	"os"
 	"sync"
 
-	dfs "git.kmsign.ru/royalcat/tstor/src/fs"
+	"git.kmsign.ru/royalcat/tstor/src/host/vfs"
 	"git.kmsign.ru/royalcat/tstor/src/iio"
 )
 
 var _ http.FileSystem = &HTTPFS{}
 
 type HTTPFS struct {
-	fs dfs.Filesystem
+	fs vfs.Filesystem
 }
 
-func NewHTTPFS(fs dfs.Filesystem) *HTTPFS {
+func NewHTTPFS(fs vfs.Filesystem) *HTTPFS {
 	return &HTTPFS{fs: fs}
 }
 
@@ -27,7 +27,7 @@ func (fs *HTTPFS) Open(name string) (http.File, error) {
 		return nil, err
 	}
 
-	fi := dfs.NewFileInfo(name, f.Size(), f.IsDir())
+	fi := vfs.NewFileInfo(name, f.Size(), f.IsDir())
 
 	// TODO make this lazy
 	fis, err := fs.filesToFileInfo(name)
@@ -46,7 +46,7 @@ func (fs *HTTPFS) filesToFileInfo(path string) ([]fs.FileInfo, error) {
 
 	var out []os.FileInfo
 	for n, f := range files {
-		out = append(out, dfs.NewFileInfo(n, f.Size(), f.IsDir()))
+		out = append(out, vfs.NewFileInfo(n, f.Size(), f.IsDir()))
 	}
 
 	return out, nil
@@ -65,7 +65,7 @@ type httpFile struct {
 	fi fs.FileInfo
 }
 
-func newHTTPFile(f dfs.File, fis []fs.FileInfo, fi fs.FileInfo) *httpFile {
+func newHTTPFile(f vfs.File, fis []fs.FileInfo, fi fs.FileInfo) *httpFile {
 	return &httpFile{
 		dirContent: fis,
 		fi:         fi,

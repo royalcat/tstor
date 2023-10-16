@@ -11,18 +11,18 @@ import (
 	"time"
 
 	"git.kmsign.ru/royalcat/tstor/src/config"
+	"git.kmsign.ru/royalcat/tstor/src/host"
+	"git.kmsign.ru/royalcat/tstor/src/host/torrent"
 	"github.com/anacrolix/torrent/storage"
+	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 
-	"git.kmsign.ru/royalcat/tstor/src/fs"
 	"git.kmsign.ru/royalcat/tstor/src/http"
 	dlog "git.kmsign.ru/royalcat/tstor/src/log"
 	"git.kmsign.ru/royalcat/tstor/src/mounts/fuse"
 	"git.kmsign.ru/royalcat/tstor/src/mounts/httpfs"
 	"git.kmsign.ru/royalcat/tstor/src/mounts/webdav"
-	"git.kmsign.ru/royalcat/tstor/src/torrent"
-	"git.kmsign.ru/royalcat/tstor/src/torrent/loader"
 )
 
 const (
@@ -75,8 +75,8 @@ func setupStorage(tcfg config.TorrentClient) (storage.ClientImplCloser, storage.
 		return nil, nil, fmt.Errorf("error creating servers piece completion: %w", err)
 	}
 
-	// TODO implement cache dir and storage capacity
-	// cacheDir := filepath.Join(tcfg.MetadataFolder, "cache")
+	// TODO implement cache/storage switching
+	// cacheDir := filepath.Join(tcfg.DataFolder, "cache")
 	// if err := os.MkdirAll(cacheDir, 0744); err != nil {
 	// 	return nil, nil, fmt.Errorf("error creating piece completion folder: %w", err)
 	// }
@@ -84,8 +84,11 @@ func setupStorage(tcfg config.TorrentClient) (storage.ClientImplCloser, storage.
 	// if err != nil {
 	// 	return nil, nil, fmt.Errorf("error creating cache: %w", err)
 	// }
-	// log.Info().Msg(fmt.Sprintf("setting cache size to %d MB", tcfg.GlobalCacheSize))
-	// fc.SetCapacity(tcfg.GlobalCacheSize * 1024 * 1024)
+	// log.Info().Msg(fmt.Sprintf("setting cache size to %d MB", 1024))
+	// fc.SetCapacity(1024 * 1024 * 1024)
+
+	// rp := storage.NewResourcePieces(fc.AsResourceProvider())
+	// st := &stc{rp}
 
 	filesDir := filepath.Join(tcfg.DataFolder, "files")
 	if err := os.MkdirAll(pcp, 0744); err != nil {
@@ -95,6 +98,14 @@ func setupStorage(tcfg config.TorrentClient) (storage.ClientImplCloser, storage.
 	st := storage.NewFileWithCompletion(filesDir, pc)
 
 	return st, pc, nil
+}
+
+type stc struct {
+	storage.ClientImpl
+}
+
+func (s *stc) Close() error {
+	return nil
 }
 
 func load(configPath string, port, webDAVPort int, fuseAllowOther bool) error {
@@ -119,7 +130,7 @@ func load(configPath string, port, webDAVPort int, fuseAllowOther bool) error {
 		return fmt.Errorf("error creating node ID: %w", err)
 	}
 
-	st, pc, err := setupStorage(conf.TorrentClient)
+	st, _, err := setupStorage(conf.TorrentClient)
 	if err != nil {
 		return err
 	}
@@ -128,26 +139,14 @@ func load(configPath string, port, webDAVPort int, fuseAllowOther bool) error {
 	if err != nil {
 		return fmt.Errorf("error starting torrent client: %w", err)
 	}
+	c.AddDhtNodes(conf.TorrentClient.DHTNodes)
 
-	var servers []*torrent.Server
-	for _, s := range conf.TorrentClient.Servers {
-		server := torrent.NewServer(c, pc, &s)
-		servers = append(servers, server)
-		if err := server.Start(); err != nil {
-			return fmt.Errorf("error starting server: %w", err)
-		}
+	ts := torrent.NewService(c, conf.TorrentClient.AddTimeout, conf.TorrentClient.ReadTimeout)
+
+	if err := os.MkdirAll(conf.DataFolder, 0744); err != nil {
+		return fmt.Errorf("error creating data folder: %w", err)
 	}
-
-	cl := loader.NewConfig(conf.TorrentClient.Routes)
-	fl := loader.NewFolder(conf.TorrentClient.Routes)
-	ss := torrent.NewStats()
-
-	dbl, err := loader.NewDB(filepath.Join(conf.TorrentClient.MetadataFolder, "magnetdb"))
-	if err != nil {
-		return fmt.Errorf("error starting magnet database: %w", err)
-	}
-
-	ts := torrent.NewService([]loader.Loader{cl, fl}, dbl, ss, c, conf.TorrentClient.AddTimeout, conf.TorrentClient.ReadTimeout)
+	cfs := host.NewStorage(conf.DataFolder, ts)
 
 	var mh *fuse.Handler
 	if conf.Mounts.Fuse.Enabled {
@@ -161,15 +160,13 @@ func load(configPath string, port, webDAVPort int, fuseAllowOther bool) error {
 
 		<-sigChan
 		log.Info().Msg("closing servers...")
-		for _, s := range servers {
-			if err := s.Close(); err != nil {
-				log.Warn().Err(err).Msg("problem closing server")
-			}
-		}
+		// for _, s := range servers {
+		// 	if err := s.Close(); err != nil {
+		// 		log.Warn().Err(err).Msg("problem closing server")
+		// 	}
+		// }
 		log.Info().Msg("closing items database...")
 		fis.Close()
-		log.Info().Msg("closing magnet database...")
-		dbl.Close()
 		log.Info().Msg("closing torrent client...")
 		c.Close()
 		if mh != nil {
@@ -181,51 +178,46 @@ func load(configPath string, port, webDAVPort int, fuseAllowOther bool) error {
 		os.Exit(1)
 	}()
 
-	fss, err := ts.Load()
-	if err != nil {
-		return fmt.Errorf("error when loading torrents: %w", err)
-	}
-
 	go func() {
 		if mh == nil {
 			return
 		}
 
-		if err := mh.Mount(fss); err != nil {
+		if err := mh.Mount(cfs); err != nil {
 			log.Info().Err(err).Msg("error mounting filesystems")
 		}
 	}()
 
-	go func() {
-		if conf.Mounts.WebDAV.Enabled {
-			port = webDAVPort
-			if port == 0 {
-				port = conf.Mounts.WebDAV.Port
-			}
-
-			cfs, err := fs.NewContainerFs(fss)
-			if err != nil {
-				log.Error().Err(err).Msg("error adding files to webDAV")
-				return
-			}
-
-			if err := webdav.NewWebDAVServer(cfs, port, conf.Mounts.WebDAV.User, conf.Mounts.WebDAV.Pass); err != nil {
+	if conf.Mounts.WebDAV.Enabled {
+		go func() {
+			if err := webdav.NewWebDAVServer(cfs, conf.Mounts.WebDAV.Port, conf.Mounts.WebDAV.User, conf.Mounts.WebDAV.Pass); err != nil {
 				log.Error().Err(err).Msg("error starting webDAV")
 			}
-		}
 
-		log.Warn().Msg("webDAV configuration not found!")
-	}()
+			log.Warn().Msg("webDAV configuration not found!")
+		}()
+	}
+	if conf.Mounts.HttpFs.Enabled {
+		go func() {
+			httpfs := httpfs.NewHTTPFS(cfs)
 
-	cfs, err := fs.NewContainerFs(fss)
-	if err != nil {
-		return fmt.Errorf("error when loading torrents: %w", err)
+			r := gin.New()
+
+			r.GET("*filepath", func(c *gin.Context) {
+				path := c.Param("filepath")
+				c.FileFromFS(path, httpfs)
+			})
+
+			log.Info().Str("host", fmt.Sprintf("0.0.0.0:%d", conf.Mounts.HttpFs.Port)).Msg("starting HTTPFS")
+			if err := r.Run(fmt.Sprintf("0.0.0.0:%d", conf.Mounts.HttpFs.Port)); err != nil {
+				log.Error().Err(err).Msg("error starting HTTPFS")
+			}
+		}()
 	}
 
-	httpfs := httpfs.NewHTTPFS(cfs)
 	logFilename := filepath.Join(conf.Log.Path, dlog.FileName)
 
-	err = http.New(nil, ss, ts, conf, servers, httpfs, logFilename, conf)
+	err = http.New(nil, nil, ts, logFilename, conf)
 	log.Error().Err(err).Msg("error initializing HTTP server")
 	return err
 }

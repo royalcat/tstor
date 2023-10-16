@@ -4,7 +4,7 @@ import (
 	"io"
 	"testing"
 
-	"git.kmsign.ru/royalcat/tstor/src/fs"
+	"git.kmsign.ru/royalcat/tstor/src/host/vfs"
 	"git.kmsign.ru/royalcat/tstor/src/iio"
 	"github.com/stretchr/testify/require"
 )
@@ -16,7 +16,7 @@ func TestSeekerWrapper(t *testing.T) {
 
 	require := require.New(t)
 
-	mf := fs.NewMemoryFile(testData)
+	mf := vfs.NewMemoryFile(testData)
 
 	r := iio.NewSeekerWrapper(mf, mf.Size())
 	defer r.Close()
