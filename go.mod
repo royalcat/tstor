@@ -6,7 +6,7 @@ require (
 	github.com/anacrolix/dht/v2 v2.20.0
 	github.com/anacrolix/log v0.14.3-0.20230823030427-4b296d71a6b4
 	github.com/anacrolix/missinggo/v2 v2.7.2
-	github.com/anacrolix/torrent v1.52.6-0.20230929044811-45c91b322ad1
+	github.com/anacrolix/torrent v1.53.1
 	github.com/billziss-gh/cgofuse v1.5.0
 	github.com/bodgit/sevenzip v1.4.3
 	github.com/dgraph-io/badger/v4 v4.2.0
@@ -39,7 +39,7 @@ require (
 	github.com/anacrolix/mmsg v1.0.0 // indirect
 	github.com/anacrolix/multiless v0.3.1-0.20221221005021-2d12701f83f7 // indirect
 	github.com/anacrolix/stm v0.4.1-0.20221221005312-96d17df0e496 // indirect
-	github.com/anacrolix/sync v0.4.1-0.20230926072150-b8cd7cfb92d0 // indirect
+	github.com/anacrolix/sync v0.5.1 // indirect
 	github.com/anacrolix/upnp v0.1.3-0.20220123035249-922794e51c96 // indirect
 	github.com/anacrolix/utp v0.1.0 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
