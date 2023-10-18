@@ -1,3 +1,5 @@
+//go:build cgo
+
 package fuse
 
 import (
@@ -38,7 +40,7 @@ func (s *Handler) Mount(vfs vfs.Filesystem) error {
 		}
 	}
 
-	host := fuse.NewFileSystemHost(NewFS(vfs))
+	host := fuse.NewFileSystemHost(newFuseFS(vfs))
 
 	// TODO improve error handling here
 	go func() {

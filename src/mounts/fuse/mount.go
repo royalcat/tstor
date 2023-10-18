@@ -1,3 +1,5 @@
+//go:build cgo
+
 package fuse
 
 import (
@@ -14,22 +16,22 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type FS struct {
+type fuseFS struct {
 	fuse.FileSystemBase
 	fh *fileHandler
 
 	log zerolog.Logger
 }
 
-func NewFS(fs vfs.Filesystem) fuse.FileSystemInterface {
+func newFuseFS(fs vfs.Filesystem) fuse.FileSystemInterface {
 	l := log.Logger.With().Str("component", "fuse").Logger()
-	return &FS{
+	return &fuseFS{
 		fh:  &fileHandler{fs: fs},
 		log: l,
 	}
 }
 
-func (fs *FS) Open(path string, flags int) (errc int, fh uint64) {
+func (fs *fuseFS) Open(path string, flags int) (errc int, fh uint64) {
 	fh, err := fs.fh.OpenHolder(path)
 	if os.IsNotExist(err) {
 		fs.log.Debug().Str("path", path).Msg("file does not exists")
@@ -46,15 +48,15 @@ func (fs *FS) Open(path string, flags int) (errc int, fh uint64) {
 
 // Unlink removes a file.
 // The FileSystemBase implementation returns -ENOSYS.
-func (fs *FS) Unlink(path string) int {
+func (fs *fuseFS) Unlink(path string) int {
 	return -fuse.ENOSYS
 }
 
-func (fs *FS) Opendir(path string) (errc int, fh uint64) {
+func (fs *fuseFS) Opendir(path string) (errc int, fh uint64) {
 	return fs.Open(path, 0)
 }
 
-func (fs *FS) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
+func (fs *fuseFS) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
 	if path == "/" {
 		stat.Mode = fuse.S_IFDIR | 0555
 		return 0
@@ -81,7 +83,7 @@ func (fs *FS) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
 	return 0
 }
 
-func (fs *FS) Read(path string, dest []byte, off int64, fh uint64) int {
+func (fs *fuseFS) Read(path string, dest []byte, off int64, fh uint64) int {
 	file, err := fs.fh.GetFile(path, fh)
 	if os.IsNotExist(err) {
 		fs.log.Error().Err(err).Str("path", path).Msg("file not found on READ operation")
@@ -110,7 +112,7 @@ func (fs *FS) Read(path string, dest []byte, off int64, fh uint64) int {
 	return n
 }
 
-func (fs *FS) Release(path string, fh uint64) int {
+func (fs *fuseFS) Release(path string, fh uint64) int {
 	if err := fs.fh.Remove(fh); err != nil {
 		fs.log.Error().Err(err).Str("path", path).Msg("error getting holder when releasing file")
 		return -fuse.EIO
@@ -119,11 +121,11 @@ func (fs *FS) Release(path string, fh uint64) int {
 	return 0
 }
 
-func (fs *FS) Releasedir(path string, fh uint64) int {
+func (fs *fuseFS) Releasedir(path string, fh uint64) int {
 	return fs.Release(path, fh)
 }
 
-func (fs *FS) Readdir(path string,
+func (fs *fuseFS) Readdir(path string,
 	fill func(name string, stat *fuse.Stat_t, ofst int64) bool,
 	ofst int64,
 	fh uint64) (errc int) {

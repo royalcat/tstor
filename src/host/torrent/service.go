@@ -47,6 +47,10 @@ func (s *Service) NewTorrentFs(f vfs.File) (vfs.Filesystem, error) {
 	}
 	<-t.GotInfo()
 	t.AllowDataDownload()
+	for _, f := range t.Files() {
+		f.SetPriority(torrent.PiecePriorityReadahead)
+	}
+
 	return vfs.NewTorrentFs(t, s.readTimeout), nil
 }
 

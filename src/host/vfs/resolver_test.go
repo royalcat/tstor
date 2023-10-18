@@ -2,6 +2,9 @@ package vfs
 
 import (
 	"os"
+	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 type Dummy struct {
@@ -49,144 +52,121 @@ func (d *DummyFs) ReadDir(path string) (map[string]File, error) {
 
 var _ Filesystem = &DummyFs{}
 
-// func TestDefaultFactories(t *testing.T) {
-// 	t.Parallel()
+func TestResolver(t *testing.T) {
+	t.Parallel()
+	resolver := newResolver(ArchiveFactories)
+	t.Run("nested fs", func(t *testing.T) {
+		t.Parallel()
+		require := require.New(t)
 
-// 	require := require.New(t)
+		fsPath, nestedFs, nestedFsPath, err := resolver.resolvePath("/f1.rar/f2.rar", func(path string) (File, error) {
+			require.Equal("/f1.rar", path)
+			return &Dummy{}, nil
+		})
+		require.Nil(err)
+		require.Equal("/f1.rar", fsPath)
+		require.Equal("/f2.rar", nestedFsPath)
+		require.IsType(&archive{}, nestedFs)
+	})
+	t.Run("root", func(t *testing.T) {
+		t.Parallel()
+		require := require.New(t)
 
-// 	require.Contains(defaultFactories, ".zip")
-// 	require.Contains(defaultFactories, ".rar")
-// 	require.Contains(defaultFactories, ".7z")
+		fsPath, nestedFs, nestedFsPath, err := resolver.resolvePath("/", func(path string) (File, error) {
+			require.Equal("/", path)
+			return &Dummy{}, nil
+		})
+		require.Nil(err)
+		require.Nil(nestedFs)
+		require.Equal("/", fsPath)
+		require.Equal("", nestedFsPath)
+	})
 
-// 	fs, err := defaultFactories[".zip"](&Dummy{}, nil)
-// 	require.NoError(err)
-// 	require.NotNil(fs)
+	t.Run("root dirty", func(t *testing.T) {
+		t.Parallel()
+		require := require.New(t)
 
-// 	fs, err = defaultFactories[".rar"](&Dummy{}, nil)
-// 	require.NoError(err)
-// 	require.NotNil(fs)
+		fsPath, nestedFs, nestedFsPath, err := resolver.resolvePath("//.//", func(path string) (File, error) {
+			require.Equal("/", path)
+			return &Dummy{}, nil
+		})
+		require.Nil(err)
+		require.Nil(nestedFs)
+		require.Equal("/", fsPath)
+		require.Equal("", nestedFsPath)
+	})
+	t.Run("fs dirty", func(t *testing.T) {
+		t.Parallel()
+		require := require.New(t)
 
-// 	fs, err = defaultFactories[".7z"](&Dummy{}, nil)
-// 	require.NoError(err)
-// 	require.NotNil(fs)
-// }
+		fsPath, nestedFs, nestedFsPath, err := resolver.resolvePath("//.//f1.rar", func(path string) (File, error) {
+			require.Equal("/f1.rar", path)
+			return &Dummy{}, nil
+		})
+		require.Nil(err)
+		require.Equal("/f1.rar", fsPath)
+		require.Equal("/", nestedFsPath)
+		require.IsType(&archive{}, nestedFs)
+	})
+	t.Run("inside folder", func(t *testing.T) {
+		t.Parallel()
+		require := require.New(t)
 
-// func TestStorageAddFs(t *testing.T) {
-// 	t.Parallel()
+		fsPath, nestedFs, nestedFsPath, err := resolver.resolvePath("//test1/f1.rar", func(path string) (File, error) {
+			require.Equal("/test1/f1.rar", path)
+			return &Dummy{}, nil
+		})
+		require.Nil(err)
+		require.IsType(&archive{}, nestedFs)
+		require.Equal("/test1/f1.rar", fsPath)
+		require.Equal("/", nestedFsPath)
+	})
+}
 
-// 	require := require.New(t)
+func TestArchiveFactories(t *testing.T) {
+	t.Parallel()
 
-// 	s := newStorage(dummyFactories)
+	require := require.New(t)
 
-// 	err := s.AddFS(&DummyFs{}, "/test")
-// 	require.NoError(err)
+	require.Contains(ArchiveFactories, ".zip")
+	require.Contains(ArchiveFactories, ".rar")
+	require.Contains(ArchiveFactories, ".7z")
 
-// 	f, err := s.Get("/test/dir/here/file1.txt")
-// 	require.NoError(err)
-// 	require.NotNil(f)
+	fs, err := ArchiveFactories[".zip"](&Dummy{})
+	require.NoError(err)
+	require.NotNil(fs)
 
-// 	err = s.AddFS(&DummyFs{}, "/test")
-// 	require.Error(err)
-// }
+	fs, err = ArchiveFactories[".rar"](&Dummy{})
+	require.NoError(err)
+	require.NotNil(fs)
 
-// func TestStorageWindowsPath(t *testing.T) {
-// 	t.Parallel()
+	fs, err = ArchiveFactories[".7z"](&Dummy{})
+	require.NoError(err)
+	require.NotNil(fs)
+}
 
-// 	require := require.New(t)
+func TestFiles(t *testing.T) {
+	t.Parallel()
+	require := require.New(t)
 
-// 	s := newStorage(dummyFactories)
+	files := map[string]*Dummy{
+		"/test/file.txt": &Dummy{},
+	}
+	{
+		file, err := getFile(files, "/test")
+		require.Nil(err)
+		require.Equal(&Dir{}, file)
+	}
+	{
+		file, err := getFile(files, "/test/file.txt")
+		require.Nil(err)
+		require.Equal(&Dummy{}, file)
+	}
 
-// 	err := s.Add(&Dummy{}, "\\path\\to\\dummy\\file.txt")
-// 	require.NoError(err)
-
-// 	file, err := s.Get("\\path\\to\\dummy\\file.txt")
-// 	require.NoError(err)
-// 	require.Equal(&Dummy{}, file)
-
-// 	file, err = s.Get("/path/to/dummy/file.txt")
-// 	require.NoError(err)
-// 	require.Equal(&Dummy{}, file)
-// }
-
-// var dummyFactories = map[string]vfs.FsFactory{
-// 	".test": func(f vfs.File, factories map[string]vfs.FsFactory) (vfs.Filesystem, error) {
-// 		return &DummyFs{}, nil
-// 	},
-// }
-
-// func TestStorage(t *testing.T) {
-// 	t.Parallel()
-
-// 	require := require.New(t)
-
-// 	s := newStorage(dummyFactories)
-
-// 	err := s.Add(&Dummy{}, "/path/to/dummy/file.txt")
-// 	require.NoError(err)
-
-// 	err = s.Add(&Dummy{}, "/path/to/dummy/file2.txt")
-// 	require.NoError(err)
-
-// 	contains := s.Has("/path")
-// 	require.True(contains)
-
-// 	contains = s.Has("/path/to/dummy/")
-// 	require.True(contains)
-
-// 	file, err := s.Get("/path/to/dummy/file.txt")
-// 	require.NoError(err)
-// 	require.Equal(&Dummy{}, file)
-
-// 	file, err = s.Get("/path/to/dummy/file3.txt")
-// 	require.Error(err)
-// 	require.Nil(file)
-
-// 	files, err := s.Children("/path/to/dummy/")
-// 	require.NoError(err)
-// 	require.Len(files, 2)
-// 	require.Contains(files, "file.txt")
-// 	require.Contains(files, "file2.txt")
-
-// 	err = s.Add(&Dummy{}, "/path/to/dummy/folder/file.txt")
-// 	require.NoError(err)
-
-// 	files, err = s.Children("/path/to/dummy/")
-// 	require.NoError(err)
-// 	require.Len(files, 3)
-// 	require.Contains(files, "file.txt")
-// 	require.Contains(files, "file2.txt")
-// 	require.Contains(files, "folder")
-
-// 	err = s.Add(&Dummy{}, "path/file4.txt")
-// 	require.NoError(err)
-
-// 	require.True(s.Has("/path/file4.txt"))
-
-// 	files, err = s.Children("/")
-// 	require.NoError(err)
-// 	require.Len(files, 1)
-
-// 	err = s.Add(&Dummy{}, "/path/special_file.test")
-// 	require.NoError(err)
-
-// 	file, err = s.Get("/path/special_file.test/dir/here/file1.txt")
-// 	require.NoError(err)
-// 	require.Equal(&Dummy{}, file)
-
-// 	files, err = s.Children("/path/special_file.test")
-// 	require.NoError(err)
-// 	require.NotNil(files)
-
-// 	files, err = s.Children("/path/special_file.test/dir/here")
-// 	require.NoError(err)
-// 	require.Len(files, 2)
-
-// 	err = s.Add(&Dummy{}, "/path/to/__special__path/file3.txt")
-// 	require.NoError(err)
-
-// 	file, err = s.Get("/path/to/__special__path/file3.txt")
-// 	require.NoError(err)
-// 	require.Equal(&Dummy{}, file)
-
-// 	s.Clear()
-// }
+	{
+		out, err := listFilesInDir(files, "/test")
+		require.Nil(err)
+		require.Contains(out, "file.txt")
+		require.Equal(&Dummy{}, out["file.txt"])
+	}
+}

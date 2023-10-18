@@ -33,7 +33,11 @@ func (fs *TorrentFs) files() map[string]*torrentFile {
 	files := make(map[string]*torrentFile)
 	<-fs.t.GotInfo()
 	for _, file := range fs.t.Files() {
-		p := Clean(file.Path())
+		if file.Priority() == torrent.PiecePriorityNone {
+			continue
+		}
+
+		p := clean(file.Path())
 		files[p] = &torrentFile{
 			readerFunc: file.NewReader,
 			len:        file.Length(),
@@ -71,6 +75,12 @@ func (fs *TorrentFs) ReadDir(name string) (map[string]File, error) {
 	}
 
 	return listFilesInDir(fs.files(), fsPath)
+}
+
+func (fs *TorrentFs) Unlink(name string) error {
+	file := fs.t.Files()[0]
+	file.SetPriority(torrent.PiecePriorityNone)
+	return nil
 }
 
 type reader interface {
@@ -111,18 +121,11 @@ func readAtLeast(r missinggo.ReadContexter, timeout int, buf []byte, min int) (n
 	for n < min && err == nil {
 		var nn int
 
-		ctx, cancel := context.WithCancel(context.Background())
-		timer := time.AfterFunc(
-			time.Duration(timeout)*time.Second,
-			func() {
-				cancel()
-			},
-		)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+		defer cancel()
 
 		nn, err = r.ReadContext(ctx, buf[n:])
 		n += nn
-
-		timer.Stop()
 	}
 	if n >= min {
 		err = nil
@@ -175,15 +178,8 @@ func (d *torrentFile) Close() error {
 
 func (d *torrentFile) Read(p []byte) (n int, err error) {
 	d.load()
-	ctx, cancel := context.WithCancel(context.Background())
-	timer := time.AfterFunc(
-		time.Duration(d.timeout)*time.Second,
-		func() {
-			cancel()
-		},
-	)
-
-	defer timer.Stop()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(d.timeout)*time.Second)
+	defer cancel()
 
 	return d.reader.ReadContext(ctx, p)
 }
