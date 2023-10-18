@@ -22,7 +22,7 @@ require (
 	github.com/shurcooL/httpfs v0.0.0-20230704072500-f1e31cf0ba5c
 	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli/v2 v2.25.7
-	golang.org/x/net v0.16.0
+	golang.org/x/net v0.17.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
