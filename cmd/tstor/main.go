@@ -27,7 +27,6 @@ import (
 
 const (
 	configFlag     = "config"
-	fuseAllowOther = "fuse-allow-other"
 	portFlag       = "http-port"
 	webDAVPortFlag = "webdav-port"
 )
@@ -45,7 +44,7 @@ func main() {
 		},
 
 		Action: func(c *cli.Context) error {
-			err := load(c.String(configFlag), c.Int(portFlag), c.Int(webDAVPortFlag), c.Bool(fuseAllowOther))
+			err := load(c.String(configFlag))
 
 			// stop program execution on errors to avoid flashing consoles
 			if err != nil && runtime.GOOS == "windows" {
@@ -108,7 +107,7 @@ func (s *stc) Close() error {
 	return nil
 }
 
-func load(configPath string, port, webDAVPort int, fuseAllowOther bool) error {
+func load(configPath string) error {
 	conf, err := config.Load(configPath)
 	if err != nil {
 		return fmt.Errorf("error loading configuration: %w", err)

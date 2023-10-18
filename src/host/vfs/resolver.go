@@ -2,6 +2,7 @@ package vfs
 
 import (
 	"fmt"
+	"io/fs"
 	"strings"
 	"sync"
 )
@@ -119,28 +120,42 @@ PARTS_LOOP:
 
 }
 
-// func (r *resolver) resolveFile(name string, fs Filesystem) (File, error) {
-// 	fsPath, nestedFs, nestedFsPath, err := r.resolvePath(name, fs)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+var ErrNotExist = fs.ErrNotExist
 
-// 	if nestedFs == nil {
-// 		return fs.Open(fsPath)
-// 	}
+func getFile[F File](m map[string]F, name string) (File, error) {
+	name = clean(name)
+	if name == Separator {
+		return &Dir{}, nil
+	}
 
-// 	return nestedFs.Open(nestedFsPath)
-// }
+	f, ok := m[name]
+	if ok {
+		return f, nil
+	}
 
-// func (r *resolver) resolveDir(name string, fs Filesystem) (map[string]File, error) {
-// 	fsPath, nestedFs, nestedFsPath, err := r.resolvePath(name, fs)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	for p := range m {
+		if strings.HasPrefix(p, name) {
+			return &Dir{}, nil
+		}
+	}
 
-// 	if nestedFs == nil {
-// 		return fs.ReadDir(fsPath)
-// 	}
+	return nil, ErrNotExist
+}
 
-// 	return nestedFs.ReadDir(nestedFsPath)
-// }
+func listFilesInDir[F File](m map[string]F, name string) (map[string]File, error) {
+	name = clean(name)
+
+	out := map[string]File{}
+	for p, f := range m {
+		if strings.HasPrefix(p, name) {
+			parts := strings.Split(trimRelPath(p, name), Separator)
+			if len(parts) == 1 {
+				out[parts[0]] = f
+			} else {
+				out[parts[0]] = &Dir{}
+			}
+		}
+	}
+
+	return out, nil
+}

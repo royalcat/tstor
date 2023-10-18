@@ -1,33 +1,24 @@
-#===============
-# Stage 1: Build
-#===============
+FROM golang:1.21 as builder
 
-FROM golang:1.20 as builder
+WORKDIR /app
 
-ENV BIN_REPO=git.kmsign.ru/royalcat/tstor
-ENV BIN_PATH=$GOPATH/src/$BIN_REPO
+COPY go.mod ./
+COPY go.sum ./
+RUN go mod download
 
-COPY . $BIN_PATH
-WORKDIR $BIN_PATH
+COPY ./src ./src
+COPY ./cmd ./cmd
+COPY ./assets ./assets
+COPY ./templates ./templates
+COPY embed.go embed.go
 
-RUN apk add fuse-dev git gcc libc-dev g++ make
+RUN go generate ./...
+RUN CGO_ENABLED=0 go build -tags timetzdata -o /tstor ./cmd/tstor/main.go 
 
-RUN BIN_OUTPUT=/bin/tstor make build
 
-#===============
-# Stage 2: Run
-#===============
+FROM scratch
 
-FROM alpine:3
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=builder /tstor /tstor
 
-RUN apk add gcc libc-dev fuse-dev
-
-COPY --from=builder /bin/tstor /bin/tstor
-RUN chmod +x /bin/tstor
-
-RUN mkdir /tstor-data
-
-RUN echo "user_allow_other" >> /etc/fuse.conf
-ENV tstor_FUSE_ALLOW_OTHER=true
-
-ENTRYPOINT ["./bin/tstor"]
+ENTRYPOINT ["/tstor"]
