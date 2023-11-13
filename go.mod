@@ -3,7 +3,7 @@ module git.kmsign.ru/royalcat/tstor
 go 1.21
 
 require (
-	github.com/anacrolix/dht/v2 v2.20.0
+	github.com/anacrolix/dht/v2 v2.21.0
 	github.com/anacrolix/log v0.14.3-0.20230823030427-4b296d71a6b4
 	github.com/anacrolix/missinggo/v2 v2.7.2
 	github.com/anacrolix/torrent v1.52.6-0.20230929044811-45c91b322ad1
