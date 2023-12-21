@@ -25,7 +25,7 @@ func TestHandler(t *testing.T) {
 	h := NewHandler(false, p)
 
 	mem := vfs.NewMemoryFS(map[string]*vfs.MemoryFile{
-		"/test.txt": vfs.NewMemoryFile([]byte("test")),
+		"/test.txt": vfs.NewMemoryFile("test.txt", []byte("test")),
 	})
 
 	err := h.Mount(mem)
@@ -52,7 +52,7 @@ func TestHandlerDriveLetter(t *testing.T) {
 	h := NewHandler(false, p)
 
 	mem := vfs.NewMemoryFS(map[string]*vfs.MemoryFile{
-		"/test.txt": vfs.NewMemoryFile([]byte("test")),
+		"/test.txt": vfs.NewMemoryFile("test.txt", []byte("test")),
 	})
 
 	err := h.Mount(mem)

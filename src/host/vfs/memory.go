@@ -2,6 +2,8 @@ package vfs
 
 import (
 	"bytes"
+	"io/fs"
+	"path"
 )
 
 var _ Filesystem = &MemoryFs{}
@@ -20,20 +22,35 @@ func (m *MemoryFs) Open(filename string) (File, error) {
 	return getFile(m.files, filename)
 }
 
-func (fs *MemoryFs) ReadDir(path string) (map[string]File, error) {
-	return listFilesInDir(fs.files, path)
+func (fs *MemoryFs) ReadDir(path string) ([]fs.DirEntry, error) {
+	return listDirFromFiles(fs.files, path)
+}
+
+// Stat implements Filesystem.
+func (mfs *MemoryFs) Stat(filename string) (fs.FileInfo, error) {
+	file, ok := mfs.files[filename]
+	if !ok {
+		return nil, ErrNotExist
+	}
+	return newFileInfo(path.Base(filename), file.Size()), nil
 }
 
 var _ File = &MemoryFile{}
 
 type MemoryFile struct {
+	name string
 	*bytes.Reader
 }
 
-func NewMemoryFile(data []byte) *MemoryFile {
+func NewMemoryFile(name string, data []byte) *MemoryFile {
 	return &MemoryFile{
+		name:   name,
 		Reader: bytes.NewReader(data),
 	}
+}
+
+func (d *MemoryFile) Stat() (fs.FileInfo, error) {
+	return newFileInfo(d.name, int64(d.Reader.Len())), nil
 }
 
 func (d *MemoryFile) Size() int64 {

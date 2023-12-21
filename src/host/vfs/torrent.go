@@ -3,6 +3,8 @@ package vfs
 import (
 	"context"
 	"io"
+	"io/fs"
+	"path"
 	"sync"
 	"time"
 
@@ -14,9 +16,13 @@ import (
 var _ Filesystem = &TorrentFs{}
 
 type TorrentFs struct {
-	mu          sync.RWMutex
-	t           *torrent.Torrent
+	mu sync.Mutex
+	t  *torrent.Torrent
+
 	readTimeout int
+
+	//cache
+	filesCache map[string]*torrentFile
 
 	resolver *resolver
 }
@@ -30,27 +36,59 @@ func NewTorrentFs(t *torrent.Torrent, readTimeout int) *TorrentFs {
 }
 
 func (fs *TorrentFs) files() map[string]*torrentFile {
-	files := make(map[string]*torrentFile)
-	<-fs.t.GotInfo()
-	for _, file := range fs.t.Files() {
-		if file.Priority() == torrent.PiecePriorityNone {
-			continue
+	if fs.filesCache == nil {
+		fs.mu.Lock()
+		<-fs.t.GotInfo()
+		files := fs.t.Files()
+		fs.filesCache = make(map[string]*torrentFile)
+		for _, file := range files {
+			p := AbsPath(file.Path())
+			fs.filesCache[p] = &torrentFile{
+				name:       path.Base(p),
+				readerFunc: file.NewReader,
+				len:        file.Length(),
+				timeout:    fs.readTimeout,
+			}
 		}
-
-		p := clean(file.Path())
-		files[p] = &torrentFile{
-			readerFunc: file.NewReader,
-			len:        file.Length(),
-			timeout:    fs.readTimeout,
-		}
+		fs.mu.Unlock()
 	}
 
-	return files
+	return fs.filesCache
 }
 
 func (fs *TorrentFs) rawOpen(path string) (File, error) {
 	file, err := getFile(fs.files(), path)
 	return file, err
+}
+
+func (fs *TorrentFs) rawStat(filename string) (fs.FileInfo, error) {
+	file, err := getFile(fs.files(), filename)
+	if err != nil {
+		return nil, err
+	}
+	if file.IsDir() {
+		return newDirInfo(path.Base(filename)), nil
+	} else {
+		return newFileInfo(path.Base(filename), file.Size()), nil
+	}
+
+}
+
+// Stat implements Filesystem.
+func (fs *TorrentFs) Stat(filename string) (fs.FileInfo, error) {
+	if filename == Separator {
+		return newDirInfo(filename), nil
+	}
+
+	fsPath, nestedFs, nestedFsPath, err := fs.resolver.resolvePath(filename, fs.rawOpen)
+	if err != nil {
+		return nil, err
+	}
+	if nestedFs != nil {
+		return nestedFs.Stat(nestedFsPath)
+	}
+
+	return fs.rawStat(fsPath)
 }
 
 func (fs *TorrentFs) Open(filename string) (File, error) {
@@ -65,7 +103,7 @@ func (fs *TorrentFs) Open(filename string) (File, error) {
 	return fs.rawOpen(fsPath)
 }
 
-func (fs *TorrentFs) ReadDir(name string) (map[string]File, error) {
+func (fs *TorrentFs) ReadDir(name string) ([]fs.DirEntry, error) {
 	fsPath, nestedFs, nestedFsPath, err := fs.resolver.resolvePath(name, fs.rawOpen)
 	if err != nil {
 		return nil, err
@@ -74,7 +112,7 @@ func (fs *TorrentFs) ReadDir(name string) (map[string]File, error) {
 		return nestedFs.ReadDir(nestedFsPath)
 	}
 
-	return listFilesInDir(fs.files(), fsPath)
+	return listDirFromFiles(fs.files(), fsPath)
 }
 
 func (fs *TorrentFs) Unlink(name string) error {
@@ -144,10 +182,16 @@ func (rw *readAtWrapper) Close() error {
 var _ File = &torrentFile{}
 
 type torrentFile struct {
+	name string
+
 	readerFunc func() torrent.Reader
 	reader     reader
 	len        int64
 	timeout    int
+}
+
+func (d *torrentFile) Stat() (fs.FileInfo, error) {
+	return newFileInfo(d.name, d.len), nil
 }
 
 func (d *torrentFile) load() {

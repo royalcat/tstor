@@ -9,11 +9,12 @@ import (
 )
 
 func NewWebDAVServer(fs vfs.Filesystem, port int, user, pass string) error {
-	log.Info().Str("host", fmt.Sprintf("0.0.0.0:%d", port)).Msg("starting webDAV server")
 
 	srv := newHandler(fs)
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	serveMux := http.NewServeMux()
+
+	serveMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		username, password, _ := r.BasicAuth()
 		if username == user && password == pass {
 			srv.ServeHTTP(w, r)
@@ -22,8 +23,16 @@ func NewWebDAVServer(fs vfs.Filesystem, port int, user, pass string) error {
 
 		w.Header().Set("WWW-Authenticate", `Basic realm="BASIC WebDAV REALM"`)
 		w.WriteHeader(401)
-		w.Write([]byte("401 Unauthorized\n"))
+		_, _ = w.Write([]byte("401 Unauthorized\n"))
 	})
 
-	return http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), nil)
+	//nolint:exhaustruct
+	httpServer := &http.Server{
+		Addr:    fmt.Sprintf("0.0.0.0:%d", port),
+		Handler: serveMux,
+	}
+
+	log.Info().Str("host", httpServer.Addr).Msg("starting webDAV server")
+
+	return httpServer.ListenAndServe()
 }

@@ -1,0 +1,52 @@
+linters:
+  enable:
+    - revive
+    - exhaustruct
+    - nakedret
+    - gomoddirectives
+    - importas
+    - misspell
+    - promlinter
+    - prealloc
+    - predeclared
+    - stylecheck
+    - ineffassign
+    - dupl
+    - govet
+    - staticcheck
+    - unused
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    # - containedctx
+    - durationcheck
+    - errcheck
+    - nakedret
+    - testifylint
+
+linters-settings:
+  revive:
+    ignore-generated-header: true
+    severity: warning
+    rules:
+      - name: blank-imports
+        disabled: true
+  staticcheck:
+    checks:
+      - "-SA4006"
+  gosimple:
+    checks:
+      - "-S1002"
+  exhaustruct:
+    include:
+      - ".*Service"
+      - ".*Server.*"
+    exclude:
+      - ".*mutex"
+      - ".*mutex"
+  stylecheck:
+    checks:
+      - "-ST1003"
+  dupl:
+    threshold: 180

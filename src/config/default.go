@@ -20,6 +20,10 @@ var defaultConfig = Config{
 		Fuse: Fuse{
 			Enabled: false,
 		},
+		NFS: NFS{
+			Enabled: false,
+			Port:    8122,
+		},
 	},
 
 	TorrentClient: TorrentClient{

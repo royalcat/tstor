@@ -10,7 +10,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}/cmd/tstor/main.go",
-            "cwd": "${workspaceFolder}/bin",
+            "cwd": "${workspaceFolder}/bin"
         }
     ]
 }

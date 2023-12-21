@@ -1,7 +1,9 @@
 package vfs
 
 import (
-	"os"
+	"errors"
+	"io/fs"
+	"path"
 	"time"
 
 	"git.kmsign.ru/royalcat/tstor/src/iio"
@@ -10,9 +12,12 @@ import (
 type File interface {
 	IsDir() bool
 	Size() int64
+	Stat() (fs.FileInfo, error)
 
 	iio.Reader
 }
+
+var ErrNotImplemented = errors.New("not implemented")
 
 type Filesystem interface {
 	// Open opens the named file for reading. If successful, methods on the
@@ -22,8 +27,12 @@ type Filesystem interface {
 
 	// ReadDir reads the directory named by dirname and returns a list of
 	// directory entries.
-	ReadDir(path string) (map[string]File, error)
+	ReadDir(path string) ([]fs.DirEntry, error)
+
+	Stat(filename string) (fs.FileInfo, error)
 }
+
+const defaultMode = fs.FileMode(0555)
 
 type fileInfo struct {
 	name  string
@@ -31,12 +40,35 @@ type fileInfo struct {
 	isDir bool
 }
 
-func NewFileInfo(name string, size int64, isDir bool) *fileInfo {
+var _ fs.FileInfo = &fileInfo{}
+var _ fs.DirEntry = &fileInfo{}
+
+func newDirInfo(name string) *fileInfo {
 	return &fileInfo{
-		name:  name,
-		size:  size,
-		isDir: isDir,
+		name:  path.Base(name),
+		size:  0,
+		isDir: true,
 	}
+}
+
+func newFileInfo(name string, size int64) *fileInfo {
+	return &fileInfo{
+		name:  path.Base(name),
+		size:  size,
+		isDir: false,
+	}
+}
+
+func (fi *fileInfo) Info() (fs.FileInfo, error) {
+	return fi, nil
+}
+
+func (fi *fileInfo) Type() fs.FileMode {
+	if fi.isDir {
+		return fs.ModeDir
+	}
+
+	return 0
 }
 
 func (fi *fileInfo) Name() string {
@@ -47,17 +79,17 @@ func (fi *fileInfo) Size() int64 {
 	return fi.size
 }
 
-func (fi *fileInfo) Mode() os.FileMode {
+func (fi *fileInfo) Mode() fs.FileMode {
 	if fi.isDir {
-		return 0555 | os.ModeDir
+		return defaultMode | fs.ModeDir
 	}
 
-	return 0555
+	return defaultMode
 }
 
 func (fi *fileInfo) ModTime() time.Time {
 	// TODO fix it
-	return time.Now()
+	return time.Time{}
 }
 
 func (fi *fileInfo) IsDir() bool {

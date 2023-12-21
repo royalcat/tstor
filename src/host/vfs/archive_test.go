@@ -16,18 +16,21 @@ func TestZipFilesystem(t *testing.T) {
 	t.Parallel()
 	require := require.New(t)
 
-	zReader, len := createTestZip(require)
+	zReader, size := createTestZip(require)
 
-	zfs := NewArchive(zReader, len, ZipLoader)
+	zfs := NewArchive(zReader, size, ZipLoader)
 
 	files, err := zfs.ReadDir("/path/to/test/file")
 	require.NoError(err)
 
 	require.Len(files, 1)
-	f := files["1.txt"]
-	require.NotNil(f)
+	e := files[0]
+	require.Equal("1.txt", e.Name())
+	require.NotNil(e)
 
 	out := make([]byte, 11)
+	f, err := zfs.Open("/path/to/test/file/1.txt")
+	require.NoError(err)
 	n, err := f.Read(out)
 	require.Equal(io.EOF, err)
 	require.Equal(11, n)

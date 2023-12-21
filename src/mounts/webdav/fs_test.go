@@ -13,16 +13,17 @@ import (
 
 func TestWebDAVFilesystem(t *testing.T) {
 	t.Parallel()
+	ctx := context.Background()
 
 	require := require.New(t)
 
 	mfs := vfs.NewMemoryFS(map[string]*vfs.MemoryFile{
-		"/folder/file.txt": vfs.NewMemoryFile([]byte("test file content.")),
+		"/folder/file.txt": vfs.NewMemoryFile("file.txt", []byte("test file content.")),
 	})
 
 	wfs := newFS(mfs)
 
-	dir, err := wfs.OpenFile(context.Background(), "/", 0, 0)
+	dir, err := wfs.OpenFile(ctx, "/", 0, 0)
 	require.NoError(err)
 
 	fi, err := dir.Readdir(0)
@@ -30,7 +31,7 @@ func TestWebDAVFilesystem(t *testing.T) {
 	require.Len(fi, 1)
 	require.Equal("folder", fi[0].Name())
 
-	file, err := wfs.OpenFile(context.Background(), "/folder/file.txt", 0, 0)
+	file, err := wfs.OpenFile(ctx, "/folder/file.txt", 0, 0)
 	require.NoError(err)
 	_, err = file.Readdir(0)
 	require.ErrorIs(err, os.ErrInvalid)
@@ -57,7 +58,7 @@ func TestWebDAVFilesystem(t *testing.T) {
 	fInfo, err := wfs.Stat(context.Background(), "/folder/file.txt")
 	require.NoError(err)
 	require.Equal("/folder/file.txt", fInfo.Name())
-	require.Equal(false, fInfo.IsDir())
+	require.False(fInfo.IsDir())
 	require.Equal(int64(18), fInfo.Size())
 }
 
@@ -67,7 +68,7 @@ func TestErrNotImplemented(t *testing.T) {
 	require := require.New(t)
 
 	mfs := vfs.NewMemoryFS(map[string]*vfs.MemoryFile{
-		"/folder/file.txt": vfs.NewMemoryFile([]byte("test file content.")),
+		"/folder/file.txt": vfs.NewMemoryFile("file.txt", []byte("test file content.")),
 	})
 
 	wfs := newFS(mfs)

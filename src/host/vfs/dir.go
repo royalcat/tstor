@@ -1,26 +1,43 @@
 package vfs
 
-var _ File = &Dir{}
+import (
+	"io/fs"
+	"path"
+)
 
-type Dir struct {
+var _ File = &dir{}
+
+func NewDir(name string) File {
+	return &dir{
+		name: path.Base(name),
+	}
 }
 
-func (d *Dir) Size() int64 {
+type dir struct {
+	name string
+}
+
+// Info implements File.
+func (d *dir) Stat() (fs.FileInfo, error) {
+	return newDirInfo(d.name), nil
+}
+
+func (d *dir) Size() int64 {
 	return 0
 }
 
-func (d *Dir) IsDir() bool {
+func (d *dir) IsDir() bool {
 	return true
 }
 
-func (d *Dir) Close() error {
+func (d *dir) Close() error {
 	return nil
 }
 
-func (d *Dir) Read(p []byte) (n int, err error) {
+func (d *dir) Read(p []byte) (n int, err error) {
 	return 0, nil
 }
 
-func (d *Dir) ReadAt(p []byte, off int64) (n int, err error) {
+func (d *dir) ReadAt(p []byte, off int64) (n int, err error) {
 	return 0, nil
 }

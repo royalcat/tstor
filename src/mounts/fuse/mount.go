@@ -174,13 +174,13 @@ func (fh *fileHandler) ListDir(path string) ([]string, error) {
 	fh.mu.RLock()
 	defer fh.mu.RUnlock()
 
-	var out []string
 	files, err := fh.fs.ReadDir(path)
 	if err != nil {
 		return nil, err
 	}
-	for p := range files {
-		out = append(out, p)
+	out := make([]string, 0, len(files))
+	for _, p := range files {
+		out = append(out, p.Name())
 	}
 
 	return out, nil

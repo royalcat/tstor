@@ -3,8 +3,9 @@ package webdav
 import (
 	"context"
 	"io"
+	"io/fs"
 	"os"
-	"path/filepath"
+	"path"
 	"sync"
 	"time"
 
@@ -24,30 +25,25 @@ func newFS(fs vfs.Filesystem) *WebDAV {
 }
 
 func (wd *WebDAV) OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (webdav.File, error) {
-	p := "/" + name
+	name = vfs.AbsPath(name)
+
 	// TODO handle flag and permissions
-	f, err := wd.lookupFile(p)
+	f, err := wd.lookupFile(name)
 	if err != nil {
 		return nil, err
 	}
 
-	wdf := newFile(filepath.Base(p), f, func() ([]os.FileInfo, error) {
-		return wd.listDir(p)
+	wdf := newFile(path.Base(name), f, func() ([]fs.FileInfo, error) {
+		return wd.listDir(name)
 	})
 	return wdf, nil
 }
 
-func (wd *WebDAV) Stat(ctx context.Context, name string) (os.FileInfo, error) {
-	p := "/" + name
-	f, err := wd.lookupFile(p)
-	if err != nil {
-		return nil, err
-	}
-	fi := newFileInfo(name, f.Size(), f.IsDir())
-	return fi, nil
+func (wd *WebDAV) Stat(ctx context.Context, name string) (fs.FileInfo, error) {
+	return wd.fs.Stat(vfs.AbsPath(name))
 }
 
-func (wd *WebDAV) Mkdir(ctx context.Context, name string, perm os.FileMode) error {
+func (wd *WebDAV) Mkdir(ctx context.Context, name string, perm fs.FileMode) error {
 	return webdav.ErrNotImplemented
 }
 
@@ -59,8 +55,8 @@ func (wd *WebDAV) Rename(ctx context.Context, oldName, newName string) error {
 	return webdav.ErrNotImplemented
 }
 
-func (wd *WebDAV) lookupFile(path string) (vfs.File, error) {
-	return wd.fs.Open(path)
+func (wd *WebDAV) lookupFile(name string) (vfs.File, error) {
+	return wd.fs.Open(path.Clean(name))
 }
 
 func (wd *WebDAV) listDir(path string) ([]os.FileInfo, error) {
@@ -69,9 +65,13 @@ func (wd *WebDAV) listDir(path string) ([]os.FileInfo, error) {
 		return nil, err
 	}
 
-	var out []os.FileInfo
-	for n, f := range files {
-		out = append(out, newFileInfo(n, f.Size(), f.IsDir()))
+	out := make([]os.FileInfo, 0, len(files))
+	for _, f := range files {
+		info, err := f.Info()
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, info)
 	}
 
 	return out, nil

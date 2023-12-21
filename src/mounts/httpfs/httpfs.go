@@ -21,32 +21,37 @@ func NewHTTPFS(fs vfs.Filesystem) *HTTPFS {
 	return &HTTPFS{fs: fs}
 }
 
-func (fs *HTTPFS) Open(name string) (http.File, error) {
-	f, err := fs.fs.Open(name)
+func (hfs *HTTPFS) Open(name string) (http.File, error) {
+	f, err := hfs.fs.Open(name)
 	if err != nil {
 		return nil, err
 	}
 
-	fi := vfs.NewFileInfo(name, f.Size(), f.IsDir())
-
-	// TODO make this lazy
-	fis, err := fs.filesToFileInfo(name)
-	if err != nil {
-		return nil, err
+	var fis []fs.FileInfo
+	if f.IsDir() {
+		// TODO make this lazy
+		fis, err = hfs.filesToFileInfo(name)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return newHTTPFile(f, fis, fi), nil
+	return newHTTPFile(f, fis), nil
 }
 
-func (fs *HTTPFS) filesToFileInfo(path string) ([]fs.FileInfo, error) {
-	files, err := fs.fs.ReadDir(path)
+func (hfs *HTTPFS) filesToFileInfo(name string) ([]fs.FileInfo, error) {
+	files, err := hfs.fs.ReadDir(name)
 	if err != nil {
 		return nil, err
 	}
 
-	var out []os.FileInfo
-	for n, f := range files {
-		out = append(out, vfs.NewFileInfo(n, f.Size(), f.IsDir()))
+	out := make([]os.FileInfo, 0, len(files))
+	for _, f := range files {
+		info, err := f.Info()
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, info)
 	}
 
 	return out, nil
@@ -55,32 +60,31 @@ func (fs *HTTPFS) filesToFileInfo(path string) ([]fs.FileInfo, error) {
 var _ http.File = &httpFile{}
 
 type httpFile struct {
+	f vfs.File
+
 	iio.ReaderSeeker
 
 	mu sync.Mutex
 	// dirPos is protected by mu.
 	dirPos     int
 	dirContent []os.FileInfo
-
-	fi fs.FileInfo
 }
 
-func newHTTPFile(f vfs.File, fis []fs.FileInfo, fi fs.FileInfo) *httpFile {
+func newHTTPFile(f vfs.File, dirContent []os.FileInfo) *httpFile {
 	return &httpFile{
-		dirContent: fis,
-		fi:         fi,
-
+		f:            f,
+		dirContent:   dirContent,
 		ReaderSeeker: iio.NewSeekerWrapper(f, f.Size()),
 	}
 }
 
 func (f *httpFile) Readdir(count int) ([]fs.FileInfo, error) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
-	if !f.fi.IsDir() {
+	if !f.f.IsDir() {
 		return nil, os.ErrInvalid
 	}
+
+	f.mu.Lock()
+	defer f.mu.Unlock()
 
 	old := f.dirPos
 	if old >= len(f.dirContent) {
@@ -105,5 +109,5 @@ func (f *httpFile) Readdir(count int) ([]fs.FileInfo, error) {
 }
 
 func (f *httpFile) Stat() (fs.FileInfo, error) {
-	return f.fi, nil
+	return f.f.Stat()
 }

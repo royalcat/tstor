@@ -61,6 +61,12 @@ type Mounts struct {
 	WebDAV WebDAV `koanf:"webdav"`
 	HttpFs HttpFs `koanf:"httpfs"`
 	Fuse   Fuse   `koanf:"fuse"`
+	NFS    NFS    `koanf:"nfs"`
+}
+
+type NFS struct {
+	Enabled bool `koanf:"enabled"`
+	Port    int  `koanf:"port"`
 }
 
 type HttpFs struct {

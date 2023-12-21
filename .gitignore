@@ -3,3 +3,4 @@ httpfs_vfsdata.go
 bin/
 coverage.out
 bin
+build

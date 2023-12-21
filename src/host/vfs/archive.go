@@ -3,8 +3,11 @@ package vfs
 import (
 	"archive/zip"
 	"io"
+	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"git.kmsign.ru/royalcat/tstor/src/iio"
@@ -46,6 +49,8 @@ func NewArchive(r iio.Reader, size int64, loader ArchiveLoader) *archive {
 	}
 }
 
+var _ Filesystem = &archive{}
+
 func (a *archive) Open(filename string) (File, error) {
 	files, err := a.files()
 	if err != nil {
@@ -55,28 +60,56 @@ func (a *archive) Open(filename string) (File, error) {
 	return getFile(files, filename)
 }
 
-func (fs *archive) ReadDir(path string) (map[string]File, error) {
+func (fs *archive) ReadDir(path string) ([]fs.DirEntry, error) {
 	files, err := fs.files()
 	if err != nil {
 		return nil, err
 	}
 
-	return listFilesInDir(files, path)
+	return listDirFromFiles(files, path)
+}
+
+// Stat implements Filesystem.
+func (afs *archive) Stat(filename string) (fs.FileInfo, error) {
+	files, err := afs.files()
+	if err != nil {
+		return nil, err
+	}
+
+	if file, ok := files[filename]; ok {
+		return newFileInfo(path.Base(filename), file.Size()), nil
+	}
+
+	for p, _ := range files {
+		if strings.HasPrefix(p, filename) {
+			return newDirInfo(path.Base(filename)), nil
+		}
+	}
+
+	return nil, ErrNotExist
+
 }
 
 var _ File = &archiveFile{}
 
-func NewArchiveFile(readerFunc func() (iio.Reader, error), len int64) *archiveFile {
+func NewArchiveFile(name string, readerFunc func() (iio.Reader, error), size int64) *archiveFile {
 	return &archiveFile{
+		name:       name,
 		readerFunc: readerFunc,
-		len:        len,
+		size:       size,
 	}
 }
 
 type archiveFile struct {
+	name string
+
 	readerFunc func() (iio.Reader, error)
 	reader     iio.Reader
-	len        int64
+	size       int64
+}
+
+func (d *archiveFile) Stat() (fs.FileInfo, error) {
+	return newFileInfo(d.name, d.size), nil
 }
 
 func (d *archiveFile) load() error {
@@ -94,7 +127,7 @@ func (d *archiveFile) load() error {
 }
 
 func (d *archiveFile) Size() int64 {
-	return d.len
+	return d.size
 }
 
 func (d *archiveFile) IsDir() bool {
@@ -151,7 +184,7 @@ func ZipLoader(reader iio.Reader, size int64) (map[string]*archiveFile, error) {
 		}
 
 		n := filepath.Join(string(os.PathSeparator), f.Name)
-		af := NewArchiveFile(rf, f.FileInfo().Size())
+		af := NewArchiveFile(f.Name, rf, f.FileInfo().Size())
 
 		out[n] = af
 	}
@@ -183,7 +216,7 @@ func SevenZipLoader(reader iio.Reader, size int64) (map[string]*archiveFile, err
 			return iio.NewDiskTeeReader(zr)
 		}
 
-		af := NewArchiveFile(rf, f.FileInfo().Size())
+		af := NewArchiveFile(f.Name, rf, f.FileInfo().Size())
 		n := filepath.Join(string(os.PathSeparator), f.Name)
 
 		out[n] = af
@@ -216,7 +249,7 @@ func RarLoader(reader iio.Reader, size int64) (map[string]*archiveFile, error) {
 
 		n := filepath.Join(string(os.PathSeparator), header.Name)
 
-		af := NewArchiveFile(rf, header.UnPackedSize)
+		af := NewArchiveFile(header.Name, rf, header.UnPackedSize)
 
 		out[n] = af
 	}

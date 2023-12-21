@@ -13,7 +13,7 @@ func TestMemory(t *testing.T) {
 	testData := "Hello"
 
 	c := NewMemoryFS(map[string]*MemoryFile{
-		"/dir/here": NewMemoryFile([]byte(testData)),
+		"/dir/here": NewMemoryFile("here", []byte(testData)),
 	})
 
 	// fss := map[string]Filesystem{
@@ -32,7 +32,7 @@ func TestMemory(t *testing.T) {
 	data := make([]byte, 5)
 	n, err := f.Read(data)
 	require.NoError(err)
-	require.Equal(n, 5)
+	require.Equal(5, n)
 	require.Equal(string(data), testData)
 
 	files, err := c.ReadDir("/")

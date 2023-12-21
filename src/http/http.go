@@ -8,6 +8,7 @@ import (
 	"git.kmsign.ru/royalcat/tstor/src/config"
 	"git.kmsign.ru/royalcat/tstor/src/host/torrent"
 	"github.com/anacrolix/missinggo/v2/filecache"
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
 	"github.com/shurcooL/httpfs/html/vfstemplate"
@@ -19,6 +20,7 @@ func New(fc *filecache.Cache, ss *torrent.Stats, s *torrent.Service, logPath str
 	r.Use(gin.Recovery())
 	r.Use(gin.ErrorLogger())
 	r.Use(Logger())
+	pprof.Register(r)
 
 	r.GET("/assets/*filepath", func(c *gin.Context) {
 		c.FileFromFS(c.Request.URL.Path, http.FS(tstor.Assets))

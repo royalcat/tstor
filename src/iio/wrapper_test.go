@@ -16,7 +16,7 @@ func TestSeekerWrapper(t *testing.T) {
 
 	require := require.New(t)
 
-	mf := vfs.NewMemoryFile(testData)
+	mf := vfs.NewMemoryFile("text.txt", testData)
 
 	r := iio.NewSeekerWrapper(mf, mf.Size())
 	defer r.Close()

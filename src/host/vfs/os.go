@@ -11,10 +11,19 @@ type OsFS struct {
 	hostDir string
 }
 
+// Stat implements Filesystem.
+func (fs *OsFS) Stat(filename string) (fs.FileInfo, error) {
+	if path.Clean(filename) == Separator {
+		return newDirInfo(Separator), nil
+	}
+
+	return os.Stat(path.Join(fs.hostDir, filename))
+}
+
 // Open implements Filesystem.
 func (fs *OsFS) Open(filename string) (File, error) {
 	if path.Clean(filename) == Separator {
-		return &Dir{}, nil
+		return NewDir(filename), nil
 	}
 
 	osfile, err := os.Open(path.Join(fs.hostDir, filename))
@@ -25,21 +34,9 @@ func (fs *OsFS) Open(filename string) (File, error) {
 }
 
 // ReadDir implements Filesystem.
-func (o *OsFS) ReadDir(dir string) (map[string]File, error) {
+func (o *OsFS) ReadDir(dir string) ([]fs.DirEntry, error) {
 	dir = path.Join(o.hostDir, dir)
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, err
-	}
-	out := map[string]File{}
-	for _, e := range entries {
-		if e.IsDir() {
-			out[e.Name()] = &Dir{}
-		} else {
-			out[e.Name()] = NewLazyOsFile(path.Join(dir, e.Name()))
-		}
-	}
-	return out, nil
+	return os.ReadDir(dir)
 }
 
 func NewOsFs(osDir string) *OsFS {
@@ -59,6 +56,11 @@ func NewOsFile(f *os.File) *OsFile {
 }
 
 var _ File = &OsFile{}
+
+// Info implements File.
+func (f *OsFile) Info() (fs.FileInfo, error) {
+	return f.f.Stat()
+}
 
 // Close implements File.
 func (f *OsFile) Close() error {
@@ -101,6 +103,9 @@ type LazyOsFile struct {
 	m    sync.Mutex
 	path string
 	file *os.File
+
+	// cached field
+	info fs.FileInfo
 }
 
 func NewLazyOsFile(path string) *LazyOsFile {
@@ -127,25 +132,49 @@ func (f *LazyOsFile) open() error {
 
 // Close implements File.
 func (f *LazyOsFile) Close() error {
+	if f.file == nil {
+		return nil
+	}
 	return f.file.Close()
 }
 
 // Read implements File.
 func (f *LazyOsFile) Read(p []byte) (n int, err error) {
+	err = f.open()
+	if err != nil {
+		return 0, err
+	}
 	return f.file.Read(p)
 }
 
 // ReadAt implements File.
 func (f *LazyOsFile) ReadAt(p []byte, off int64) (n int, err error) {
+	err = f.open()
+	if err != nil {
+		return 0, err
+	}
 	return f.file.ReadAt(p, off)
 }
 
 func (f *LazyOsFile) Stat() (fs.FileInfo, error) {
-	if f.file == nil {
-		return os.Stat(f.path)
-	} else {
-		return f.file.Stat()
+	f.m.Lock()
+	if f.info == nil {
+		if f.file == nil {
+			info, err := os.Stat(f.path)
+			if err != nil {
+				return nil, err
+			}
+			f.info = info
+		} else {
+			info, err := f.file.Stat()
+			if err != nil {
+				return nil, err
+			}
+			f.info = info
+		}
 	}
+	f.m.Unlock()
+	return f.info, nil
 }
 
 // Size implements File.

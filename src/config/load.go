@@ -42,7 +42,10 @@ func Load(path string) (*Config, error) {
 	}
 
 	conf := Config{}
-	k.Unmarshal("", &conf)
+	err = k.Unmarshal("", &conf)
+	if err != nil {
+		return nil, err
+	}
 
 	return &conf, nil
 }
