@@ -72,6 +72,19 @@ func (r *ResolveFS) Stat(filename string) (fs.FileInfo, error) {
 	return r.rootFS.Stat(fsPath)
 }
 
+// Unlink implements Filesystem.
+func (r *ResolveFS) Unlink(filename string) error {
+	fsPath, nestedFs, nestedFsPath, err := r.resolver.resolvePath(filename, r.rootFS.Open)
+	if err != nil {
+		return err
+	}
+	if nestedFs != nil {
+		return nestedFs.Unlink(nestedFsPath)
+	}
+
+	return r.rootFS.Unlink(fsPath)
+}
+
 var _ Filesystem = &ResolveFS{}
 
 type FsFactory func(f File) (Filesystem, error)

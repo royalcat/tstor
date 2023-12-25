@@ -30,6 +30,7 @@ type Filesystem interface {
 	ReadDir(path string) ([]fs.DirEntry, error)
 
 	Stat(filename string) (fs.FileInfo, error)
+	Unlink(filename string) error
 }
 
 const defaultMode = fs.FileMode(0555)

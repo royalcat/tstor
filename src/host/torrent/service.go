@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"git.kmsign.ru/royalcat/tstor/src/host/repository"
 	"git.kmsign.ru/royalcat/tstor/src/host/vfs"
 	"github.com/anacrolix/torrent"
 	"github.com/anacrolix/torrent/metainfo"
@@ -13,7 +14,8 @@ import (
 )
 
 type Service struct {
-	c *torrent.Client
+	c   *torrent.Client
+	rep repository.TorrentMetaRepository
 
 	// stats *Stats
 	DefaultPriority types.PiecePriority
@@ -22,12 +24,13 @@ type Service struct {
 	addTimeout, readTimeout int
 }
 
-func NewService(c *torrent.Client, addTimeout, readTimeout int) *Service {
+func NewService(c *torrent.Client, rep repository.TorrentMetaRepository, addTimeout, readTimeout int) *Service {
 	l := slog.With("component", "torrent-service")
 	return &Service{
 		log:             l,
 		c:               c,
 		DefaultPriority: types.PiecePriorityNone,
+		rep:             rep,
 		// stats:       newStats(), // TODO persistent
 		addTimeout:  addTimeout,
 		readTimeout: readTimeout,
@@ -63,7 +66,7 @@ func (s *Service) NewTorrentFs(f vfs.File) (vfs.Filesystem, error) {
 		t.AllowDataDownload()
 	}
 
-	return vfs.NewTorrentFs(t, s.readTimeout), nil
+	return vfs.NewTorrentFs(t, s.rep, s.readTimeout), nil
 }
 
 func (s *Service) Stats() (*Stats, error) {

@@ -48,7 +48,7 @@ func (wd *WebDAV) Mkdir(ctx context.Context, name string, perm fs.FileMode) erro
 }
 
 func (wd *WebDAV) RemoveAll(ctx context.Context, name string) error {
-	return webdav.ErrNotImplemented
+	return wd.fs.Unlink(name)
 }
 
 func (wd *WebDAV) Rename(ctx context.Context, oldName, newName string) error {

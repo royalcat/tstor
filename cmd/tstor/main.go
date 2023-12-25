@@ -14,6 +14,7 @@ import (
 
 	"git.kmsign.ru/royalcat/tstor/src/config"
 	"git.kmsign.ru/royalcat/tstor/src/host"
+	"git.kmsign.ru/royalcat/tstor/src/host/repository"
 	"git.kmsign.ru/royalcat/tstor/src/host/torrent"
 	"git.kmsign.ru/royalcat/tstor/src/host/vfs"
 	"github.com/rs/zerolog/log"
@@ -72,6 +73,14 @@ func run(configPath string) error {
 		log.Err(err).Msg("set priority failed")
 	}
 
+	if err := os.MkdirAll(filepath.Join(conf.TorrentClient.MetadataFolder, "meta"), 0744); err != nil {
+		return fmt.Errorf("error creating metadata folder: %w", err)
+	}
+	rep, err := repository.NewTorrentMetaRepository(filepath.Join(conf.TorrentClient.MetadataFolder, "meta"))
+	if err != nil {
+		return err
+	}
+
 	if err := os.MkdirAll(conf.TorrentClient.MetadataFolder, 0744); err != nil {
 		return fmt.Errorf("error creating metadata folder: %w", err)
 	}
@@ -100,7 +109,7 @@ func run(configPath string) error {
 	c.AddDhtNodes(conf.TorrentClient.DHTNodes)
 	defer c.Close()
 
-	ts := torrent.NewService(c, conf.TorrentClient.AddTimeout, conf.TorrentClient.ReadTimeout)
+	ts := torrent.NewService(c, rep, conf.TorrentClient.AddTimeout, conf.TorrentClient.ReadTimeout)
 
 	if err := os.MkdirAll(conf.DataFolder, 0744); err != nil {
 		return fmt.Errorf("error creating data folder: %w", err)
@@ -139,7 +148,7 @@ func run(configPath string) error {
 			// 	c.FileFromFS(path, httpfs)
 			// })
 
-			// log.Info().Str("host", fmt.Sprintf("0.0.0.0:%d", conf.Mounts.HttpFs.Port)).Msg("starting HTTPFS")
+			log.Info().Str("host", fmt.Sprintf("0.0.0.0:%d", conf.Mounts.HttpFs.Port)).Msg("starting HTTPFS")
 			// if err := r.Run(fmt.Sprintf("0.0.0.0:%d", conf.Mounts.HttpFs.Port)); err != nil {
 			// 	log.Error().Err(err).Msg("error starting HTTPFS")
 			// }

@@ -5,19 +5,23 @@ import (
 	"io"
 	"io/fs"
 	"path"
+	"slices"
 	"sync"
 	"time"
 
+	"git.kmsign.ru/royalcat/tstor/src/host/repository"
 	"git.kmsign.ru/royalcat/tstor/src/iio"
 	"github.com/anacrolix/missinggo/v2"
 	"github.com/anacrolix/torrent"
+	"golang.org/x/exp/maps"
 )
 
 var _ Filesystem = &TorrentFs{}
 
 type TorrentFs struct {
-	mu sync.Mutex
-	t  *torrent.Torrent
+	mu  sync.Mutex
+	t   *torrent.Torrent
+	rep repository.TorrentMetaRepository
 
 	readTimeout int
 
@@ -27,22 +31,34 @@ type TorrentFs struct {
 	resolver *resolver
 }
 
-func NewTorrentFs(t *torrent.Torrent, readTimeout int) *TorrentFs {
+func NewTorrentFs(t *torrent.Torrent, rep repository.TorrentMetaRepository, readTimeout int) *TorrentFs {
 	return &TorrentFs{
 		t:           t,
+		rep:         rep,
 		readTimeout: readTimeout,
 		resolver:    newResolver(ArchiveFactories),
 	}
 }
 
-func (fs *TorrentFs) files() map[string]*torrentFile {
+func (fs *TorrentFs) files() (map[string]*torrentFile, error) {
 	if fs.filesCache == nil {
 		fs.mu.Lock()
 		<-fs.t.GotInfo()
 		files := fs.t.Files()
+
+		excludedFiles, err := fs.rep.ExcludedFiles(fs.t.InfoHash())
+		if err != nil {
+			return nil, err
+		}
+
 		fs.filesCache = make(map[string]*torrentFile)
 		for _, file := range files {
 			p := AbsPath(file.Path())
+
+			if slices.Contains(excludedFiles, p) {
+				continue
+			}
+
 			fs.filesCache[p] = &torrentFile{
 				name:       path.Base(p),
 				readerFunc: file.NewReader,
@@ -53,16 +69,24 @@ func (fs *TorrentFs) files() map[string]*torrentFile {
 		fs.mu.Unlock()
 	}
 
-	return fs.filesCache
+	return fs.filesCache, nil
 }
 
 func (fs *TorrentFs) rawOpen(path string) (File, error) {
-	file, err := getFile(fs.files(), path)
+	files, err := fs.files()
+	if err != nil {
+		return nil, err
+	}
+	file, err := getFile(files, path)
 	return file, err
 }
 
 func (fs *TorrentFs) rawStat(filename string) (fs.FileInfo, error) {
-	file, err := getFile(fs.files(), filename)
+	files, err := fs.files()
+	if err != nil {
+		return nil, err
+	}
+	file, err := getFile(files, filename)
 	if err != nil {
 		return nil, err
 	}
@@ -111,14 +135,30 @@ func (fs *TorrentFs) ReadDir(name string) ([]fs.DirEntry, error) {
 	if nestedFs != nil {
 		return nestedFs.ReadDir(nestedFsPath)
 	}
+	files, err := fs.files()
+	if err != nil {
+		return nil, err
+	}
 
-	return listDirFromFiles(fs.files(), fsPath)
+	return listDirFromFiles(files, fsPath)
 }
 
 func (fs *TorrentFs) Unlink(name string) error {
-	file := fs.t.Files()[0]
-	file.SetPriority(torrent.PiecePriorityNone)
-	return nil
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
+	files, err := fs.files()
+	if err != nil {
+		return err
+	}
+	file := AbsPath(name)
+
+	if !slices.Contains(maps.Keys(files), file) {
+		return ErrNotExist
+	}
+	fs.filesCache = nil
+
+	return fs.rep.ExcludeFile(fs.t.InfoHash(), file)
 }
 
 type reader interface {

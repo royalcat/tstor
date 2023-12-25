@@ -11,6 +11,11 @@ type OsFS struct {
 	hostDir string
 }
 
+// Unlink implements Filesystem.
+func (fs *OsFS) Unlink(filename string) error {
+	return fs.Unlink(filename)
+}
+
 // Stat implements Filesystem.
 func (fs *OsFS) Stat(filename string) (fs.FileInfo, error) {
 	if path.Clean(filename) == Separator {

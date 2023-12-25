@@ -49,7 +49,10 @@ func NewArchive(r iio.Reader, size int64, loader ArchiveLoader) *archive {
 	}
 }
 
-var _ Filesystem = &archive{}
+// Unlink implements Filesystem.
+func (a *archive) Unlink(filename string) error {
+	return ErrNotImplemented
+}
 
 func (a *archive) Open(filename string) (File, error) {
 	files, err := a.files()

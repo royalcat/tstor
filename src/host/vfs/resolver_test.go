@@ -52,6 +52,10 @@ func (d *DummyFs) Open(filename string) (File, error) {
 	return &Dummy{}, nil
 }
 
+func (d *DummyFs) Unlink(filename string) error {
+	return ErrNotImplemented
+}
+
 func (d *DummyFs) ReadDir(path string) ([]fs.DirEntry, error) {
 	if path == "/dir/here" {
 		return []fs.DirEntry{

@@ -12,6 +12,11 @@ type MemoryFs struct {
 	files map[string]*MemoryFile
 }
 
+// Unlink implements Filesystem.
+func (fs *MemoryFs) Unlink(filename string) error {
+	return ErrNotImplemented
+}
+
 func NewMemoryFS(files map[string]*MemoryFile) *MemoryFs {
 	return &MemoryFs{
 		files: files,
