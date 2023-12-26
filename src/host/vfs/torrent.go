@@ -21,7 +21,7 @@ var _ Filesystem = &TorrentFs{}
 type TorrentFs struct {
 	mu  sync.Mutex
 	t   *torrent.Torrent
-	rep repository.TorrentMetaRepository
+	rep repository.TorrentsRepository
 
 	readTimeout int
 
@@ -31,7 +31,7 @@ type TorrentFs struct {
 	resolver *resolver
 }
 
-func NewTorrentFs(t *torrent.Torrent, rep repository.TorrentMetaRepository, readTimeout int) *TorrentFs {
+func NewTorrentFs(t *torrent.Torrent, rep repository.TorrentsRepository, readTimeout int) *TorrentFs {
 	return &TorrentFs{
 		t:           t,
 		rep:         rep,

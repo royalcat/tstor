@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"path/filepath"
 	"sync"
 
 	"github.com/anacrolix/torrent/metainfo"
@@ -10,34 +11,31 @@ import (
 	"github.com/philippgille/gokv/encoding"
 )
 
-type TorrentMetaRepository interface {
+type TorrentsRepository interface {
 	ExcludeFile(hash metainfo.Hash, file ...string) error
 	ExcludedFiles(hash metainfo.Hash) ([]string, error)
 }
 
-func NewTorrentMetaRepository(dir string) (TorrentMetaRepository, error) {
-	store, err := badgerdb.NewStore(badgerdb.Options{
-		Dir:   dir,
+func NewTorrentMetaRepository(dir string) (TorrentsRepository, error) {
+	excludedFilesStore, err := badgerdb.NewStore(badgerdb.Options{
+		Dir:   filepath.Join(dir, "excluded-files"),
 		Codec: encoding.JSON,
 	})
+
 	if err != nil {
 		return nil, err
 	}
 
 	r := &torrentRepositoryImpl{
-		store: store,
+		excludedFiles: excludedFilesStore,
 	}
 
 	return r, nil
 }
 
 type torrentRepositoryImpl struct {
-	m     sync.RWMutex
-	store gokv.Store
-}
-
-type torrentMeta struct {
-	ExludedFiles []string
+	m             sync.RWMutex
+	excludedFiles gokv.Store
 }
 
 var ErrNotFound = errors.New("not found")
@@ -46,27 +44,25 @@ func (r *torrentRepositoryImpl) ExcludeFile(hash metainfo.Hash, file ...string) 
 	r.m.Lock()
 	defer r.m.Unlock()
 
-	var meta torrentMeta
-	found, err := r.store.Get(hash.AsString(), &meta)
+	var excludedFiles []string
+	found, err := r.excludedFiles.Get(hash.AsString(), &excludedFiles)
 	if err != nil {
 		return err
 	}
 	if !found {
-		meta = torrentMeta{
-			ExludedFiles: file,
-		}
+		excludedFiles = []string{}
 	}
-	meta.ExludedFiles = unique(append(meta.ExludedFiles, file...))
+	excludedFiles = unique(append(excludedFiles, file...))
 
-	return r.store.Set(hash.AsString(), meta)
+	return r.excludedFiles.Set(hash.AsString(), excludedFiles)
 }
 
 func (r *torrentRepositoryImpl) ExcludedFiles(hash metainfo.Hash) ([]string, error) {
 	r.m.Lock()
 	defer r.m.Unlock()
 
-	var meta torrentMeta
-	found, err := r.store.Get(hash.AsString(), &meta)
+	var excludedFiles []string
+	found, err := r.excludedFiles.Get(hash.AsString(), &excludedFiles)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +70,7 @@ func (r *torrentRepositoryImpl) ExcludedFiles(hash metainfo.Hash) ([]string, err
 		return nil, nil
 	}
 
-	return meta.ExludedFiles, nil
+	return excludedFiles, nil
 }
 
 func unique[C comparable](intSlice []C) []C {

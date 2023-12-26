@@ -15,7 +15,7 @@ import (
 
 type Service struct {
 	c   *torrent.Client
-	rep repository.TorrentMetaRepository
+	rep repository.TorrentsRepository
 
 	// stats *Stats
 	DefaultPriority types.PiecePriority
@@ -24,7 +24,7 @@ type Service struct {
 	addTimeout, readTimeout int
 }
 
-func NewService(c *torrent.Client, rep repository.TorrentMetaRepository, addTimeout, readTimeout int) *Service {
+func NewService(c *torrent.Client, rep repository.TorrentsRepository, addTimeout, readTimeout int) *Service {
 	l := slog.With("component", "torrent-service")
 	return &Service{
 		log:             l,

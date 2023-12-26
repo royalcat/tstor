@@ -73,10 +73,7 @@ func run(configPath string) error {
 		log.Err(err).Msg("set priority failed")
 	}
 
-	if err := os.MkdirAll(filepath.Join(conf.TorrentClient.MetadataFolder, "meta"), 0744); err != nil {
-		return fmt.Errorf("error creating metadata folder: %w", err)
-	}
-	rep, err := repository.NewTorrentMetaRepository(filepath.Join(conf.TorrentClient.MetadataFolder, "meta"))
+	rep, err := repository.NewTorrentMetaRepository(conf.TorrentClient.MetadataFolder)
 	if err != nil {
 		return err
 	}
