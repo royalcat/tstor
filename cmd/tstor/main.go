@@ -21,12 +21,12 @@ import (
 	"github.com/urfave/cli/v2"
 	wnfs "github.com/willscott/go-nfs"
 
+	"git.kmsign.ru/royalcat/tstor/src/export/fuse"
+	"git.kmsign.ru/royalcat/tstor/src/export/httpfs"
+	"git.kmsign.ru/royalcat/tstor/src/export/nfs"
+	"git.kmsign.ru/royalcat/tstor/src/export/webdav"
 	"git.kmsign.ru/royalcat/tstor/src/http"
 	dlog "git.kmsign.ru/royalcat/tstor/src/log"
-	"git.kmsign.ru/royalcat/tstor/src/mounts/fuse"
-	"git.kmsign.ru/royalcat/tstor/src/mounts/httpfs"
-	"git.kmsign.ru/royalcat/tstor/src/mounts/nfs"
-	"git.kmsign.ru/royalcat/tstor/src/mounts/webdav"
 )
 
 const (
