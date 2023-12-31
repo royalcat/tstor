@@ -1,11 +1,11 @@
 package host
 
 import (
-	"git.kmsign.ru/royalcat/tstor/src/host/torrent"
+	"git.kmsign.ru/royalcat/tstor/src/host/service"
 	"git.kmsign.ru/royalcat/tstor/src/host/vfs"
 )
 
-func NewStorage(dataPath string, tsrv *torrent.Service) vfs.Filesystem {
+func NewStorage(dataPath string, tsrv *service.Service) vfs.Filesystem {
 	factories := map[string]vfs.FsFactory{
 		".torrent": tsrv.NewTorrentFs,
 	}

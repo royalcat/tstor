@@ -1,4 +1,4 @@
-package torrent
+package storage
 
 import (
 	"time"
@@ -19,20 +19,6 @@ func NewClient(st storage.ClientImpl, fis bep44.Store, cfg *config.TorrentClient
 	torrentCfg := torrent.NewDefaultClientConfig()
 	torrentCfg.PeerID = string(id[:])
 	torrentCfg.DefaultStorage = st
-
-	// torrentCfg.DisableIPv6 = cfg.DisableIPv6
-	// torrentCfg.DropDuplicatePeerIds = true
-	// torrentCfg.TorrentPeersLowWater = 10
-	// torrentCfg.TorrentPeersHighWater = 100
-	// torrentCfg.DisableWebtorrent = true
-	// torrentCfg.DisableAggressiveUpload = true
-	// torrentCfg.DisableWebseeds = true
-	// torrentCfg.DisableUTP = false
-	// torrentCfg.NoDefaultPortForwarding = true
-	// torrentCfg.AlwaysWantConns = false
-	// torrentCfg.ClientDhtConfig = torrent.ClientDhtConfig{
-	// 	NoDHT: true,
-	// }
 
 	l := log.Logger.With().Str("component", "torrent-client").Logger()
 

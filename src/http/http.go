@@ -6,7 +6,7 @@ import (
 
 	"git.kmsign.ru/royalcat/tstor"
 	"git.kmsign.ru/royalcat/tstor/src/config"
-	"git.kmsign.ru/royalcat/tstor/src/host/torrent"
+	"git.kmsign.ru/royalcat/tstor/src/host/service"
 	"github.com/anacrolix/missinggo/v2/filecache"
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
@@ -14,7 +14,7 @@ import (
 	"github.com/shurcooL/httpfs/html/vfstemplate"
 )
 
-func New(fc *filecache.Cache, ss *torrent.Stats, s *torrent.Service, logPath string, cfg *config.Config) error {
+func New(fc *filecache.Cache, ss *service.Stats, s *service.Service, logPath string, cfg *config.Config) error {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 	r.Use(gin.Recovery())

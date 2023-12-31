@@ -14,8 +14,8 @@ import (
 
 	"git.kmsign.ru/royalcat/tstor/src/config"
 	"git.kmsign.ru/royalcat/tstor/src/host"
-	"git.kmsign.ru/royalcat/tstor/src/host/repository"
-	"git.kmsign.ru/royalcat/tstor/src/host/torrent"
+	"git.kmsign.ru/royalcat/tstor/src/host/service"
+	"git.kmsign.ru/royalcat/tstor/src/host/storage"
 	"git.kmsign.ru/royalcat/tstor/src/host/vfs"
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
@@ -73,40 +73,40 @@ func run(configPath string) error {
 		log.Err(err).Msg("set priority failed")
 	}
 
-	rep, err := repository.NewTorrentMetaRepository(conf.TorrentClient.MetadataFolder)
-	if err != nil {
-		return err
-	}
-
 	if err := os.MkdirAll(conf.TorrentClient.MetadataFolder, 0744); err != nil {
 		return fmt.Errorf("error creating metadata folder: %w", err)
 	}
 
-	fis, err := torrent.NewFileItemStore(filepath.Join(conf.TorrentClient.MetadataFolder, "items"), 2*time.Hour)
+	fis, err := storage.NewFileItemStore(filepath.Join(conf.TorrentClient.MetadataFolder, "items"), 2*time.Hour)
 	if err != nil {
 		return fmt.Errorf("error starting item store: %w", err)
 	}
 	defer fis.Close()
 
-	id, err := torrent.GetOrCreatePeerID(filepath.Join(conf.TorrentClient.MetadataFolder, "ID"))
+	id, err := storage.GetOrCreatePeerID(filepath.Join(conf.TorrentClient.MetadataFolder, "ID"))
 	if err != nil {
 		return fmt.Errorf("error creating node ID: %w", err)
 	}
 
-	st, _, err := torrent.SetupStorage(conf.TorrentClient)
+	st, _, err := storage.SetupStorage(conf.TorrentClient)
 	if err != nil {
 		return err
 	}
 	defer st.Close()
 
-	c, err := torrent.NewClient(st, fis, &conf.TorrentClient, id)
+	rep, err := storage.NewTorrentMetaRepository(conf.TorrentClient.MetadataFolder, st)
+	if err != nil {
+		return err
+	}
+
+	c, err := storage.NewClient(st, fis, &conf.TorrentClient, id)
 	if err != nil {
 		return fmt.Errorf("error starting torrent client: %w", err)
 	}
 	c.AddDhtNodes(conf.TorrentClient.DHTNodes)
 	defer c.Close()
 
-	ts := torrent.NewService(c, rep, conf.TorrentClient.AddTimeout, conf.TorrentClient.ReadTimeout)
+	ts := service.NewService(c, rep, conf.TorrentClient.AddTimeout, conf.TorrentClient.ReadTimeout)
 
 	if err := os.MkdirAll(conf.DataFolder, 0744); err != nil {
 		return fmt.Errorf("error creating data folder: %w", err)

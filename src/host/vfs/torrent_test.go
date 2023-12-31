@@ -96,9 +96,8 @@ func TestReadAtTorrent(t *testing.T) {
 	torrFile := to.Files()[0]
 
 	tf := torrentFile{
-		readerFunc: torrFile.NewReader,
-		len:        torrFile.Length(),
-		timeout:    500,
+		file:    torrFile,
+		timeout: 500,
 	}
 
 	defer tf.Close()

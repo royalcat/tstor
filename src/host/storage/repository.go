@@ -1,10 +1,11 @@
-package repository
+package storage
 
 import (
 	"errors"
 	"path/filepath"
 	"sync"
 
+	"github.com/anacrolix/torrent"
 	"github.com/anacrolix/torrent/metainfo"
 	"github.com/philippgille/gokv"
 	"github.com/philippgille/gokv/badgerdb"
@@ -12,13 +13,13 @@ import (
 )
 
 type TorrentsRepository interface {
-	ExcludeFile(hash metainfo.Hash, file ...string) error
+	ExcludeFile(file *torrent.File) error
 	ExcludedFiles(hash metainfo.Hash) ([]string, error)
 }
 
-func NewTorrentMetaRepository(dir string) (TorrentsRepository, error) {
+func NewTorrentMetaRepository(metaDir string, storage *FileStorage) (TorrentsRepository, error) {
 	excludedFilesStore, err := badgerdb.NewStore(badgerdb.Options{
-		Dir:   filepath.Join(dir, "excluded-files"),
+		Dir:   filepath.Join(metaDir, "excluded-files"),
 		Codec: encoding.JSON,
 	})
 
@@ -28,6 +29,7 @@ func NewTorrentMetaRepository(dir string) (TorrentsRepository, error) {
 
 	r := &torrentRepositoryImpl{
 		excludedFiles: excludedFilesStore,
+		storage:       storage,
 	}
 
 	return r, nil
@@ -36,14 +38,16 @@ func NewTorrentMetaRepository(dir string) (TorrentsRepository, error) {
 type torrentRepositoryImpl struct {
 	m             sync.RWMutex
 	excludedFiles gokv.Store
+	storage       *FileStorage
 }
 
 var ErrNotFound = errors.New("not found")
 
-func (r *torrentRepositoryImpl) ExcludeFile(hash metainfo.Hash, file ...string) error {
+func (r *torrentRepositoryImpl) ExcludeFile(file *torrent.File) error {
 	r.m.Lock()
 	defer r.m.Unlock()
 
+	hash := file.Torrent().InfoHash()
 	var excludedFiles []string
 	found, err := r.excludedFiles.Get(hash.AsString(), &excludedFiles)
 	if err != nil {
@@ -52,7 +56,12 @@ func (r *torrentRepositoryImpl) ExcludeFile(hash metainfo.Hash, file ...string) 
 	if !found {
 		excludedFiles = []string{}
 	}
-	excludedFiles = unique(append(excludedFiles, file...))
+	excludedFiles = unique(append(excludedFiles, file.Path()))
+
+	err = r.storage.DeleteFile(file)
+	if err != nil {
+		return err
+	}
 
 	return r.excludedFiles.Set(hash.AsString(), excludedFiles)
 }

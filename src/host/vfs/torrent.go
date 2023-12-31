@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"git.kmsign.ru/royalcat/tstor/src/host/repository"
+	"git.kmsign.ru/royalcat/tstor/src/host/storage"
 	"git.kmsign.ru/royalcat/tstor/src/iio"
 	"github.com/anacrolix/missinggo/v2"
 	"github.com/anacrolix/torrent"
@@ -21,7 +21,7 @@ var _ Filesystem = &TorrentFs{}
 type TorrentFs struct {
 	mu  sync.Mutex
 	t   *torrent.Torrent
-	rep repository.TorrentsRepository
+	rep storage.TorrentsRepository
 
 	readTimeout int
 
@@ -31,7 +31,7 @@ type TorrentFs struct {
 	resolver *resolver
 }
 
-func NewTorrentFs(t *torrent.Torrent, rep repository.TorrentsRepository, readTimeout int) *TorrentFs {
+func NewTorrentFs(t *torrent.Torrent, rep storage.TorrentsRepository, readTimeout int) *TorrentFs {
 	return &TorrentFs{
 		t:           t,
 		rep:         rep,
@@ -53,17 +53,17 @@ func (fs *TorrentFs) files() (map[string]*torrentFile, error) {
 
 		fs.filesCache = make(map[string]*torrentFile)
 		for _, file := range files {
-			p := AbsPath(file.Path())
 
-			if slices.Contains(excludedFiles, p) {
+			if slices.Contains(excludedFiles, file.Path()) {
 				continue
 			}
 
+			p := AbsPath(file.Path())
+
 			fs.filesCache[p] = &torrentFile{
-				name:       path.Base(p),
-				readerFunc: file.NewReader,
-				len:        file.Length(),
-				timeout:    fs.readTimeout,
+				name:    path.Base(p),
+				timeout: fs.readTimeout,
+				file:    file,
 			}
 		}
 		fs.mu.Unlock()
@@ -144,6 +144,8 @@ func (fs *TorrentFs) ReadDir(name string) ([]fs.DirEntry, error) {
 }
 
 func (fs *TorrentFs) Unlink(name string) error {
+	name = AbsPath(name)
+
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
@@ -151,14 +153,15 @@ func (fs *TorrentFs) Unlink(name string) error {
 	if err != nil {
 		return err
 	}
-	file := AbsPath(name)
 
-	if !slices.Contains(maps.Keys(files), file) {
+	if !slices.Contains(maps.Keys(files), name) {
 		return ErrNotExist
 	}
-	fs.filesCache = nil
 
-	return fs.rep.ExcludeFile(fs.t.InfoHash(), file)
+	file := files[name]
+	delete(fs.filesCache, name)
+
+	return fs.rep.ExcludeFile(file.file)
 }
 
 type reader interface {
@@ -224,25 +227,25 @@ var _ File = &torrentFile{}
 type torrentFile struct {
 	name string
 
-	readerFunc func() torrent.Reader
-	reader     reader
-	len        int64
-	timeout    int
+	reader  reader
+	timeout int
+
+	file *torrent.File
 }
 
 func (d *torrentFile) Stat() (fs.FileInfo, error) {
-	return newFileInfo(d.name, d.len), nil
+	return newFileInfo(d.name, d.file.Length()), nil
 }
 
 func (d *torrentFile) load() {
 	if d.reader != nil {
 		return
 	}
-	d.reader = newReadAtWrapper(d.readerFunc(), d.timeout)
+	d.reader = newReadAtWrapper(d.file.NewReader(), d.timeout)
 }
 
 func (d *torrentFile) Size() int64 {
-	return d.len
+	return d.file.Length()
 }
 
 func (d *torrentFile) IsDir() bool {

@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"os"
 
-	"git.kmsign.ru/royalcat/tstor/src/host/torrent"
+	"git.kmsign.ru/royalcat/tstor/src/host/service"
 	"github.com/anacrolix/missinggo/v2/filecache"
 	"github.com/gin-gonic/gin"
 )
 
-var apiStatusHandler = func(fc *filecache.Cache, ss *torrent.Stats) gin.HandlerFunc {
+var apiStatusHandler = func(fc *filecache.Cache, ss *service.Stats) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		stat := gin.H{
 			"torrentStats": ss.GlobalStats(),

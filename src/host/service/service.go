@@ -1,4 +1,4 @@
-package torrent
+package service
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	"git.kmsign.ru/royalcat/tstor/src/host/repository"
+	"git.kmsign.ru/royalcat/tstor/src/host/storage"
 	"git.kmsign.ru/royalcat/tstor/src/host/vfs"
 	"github.com/anacrolix/torrent"
 	"github.com/anacrolix/torrent/metainfo"
@@ -15,7 +15,7 @@ import (
 
 type Service struct {
 	c   *torrent.Client
-	rep repository.TorrentsRepository
+	rep storage.TorrentsRepository
 
 	// stats *Stats
 	DefaultPriority types.PiecePriority
@@ -24,7 +24,7 @@ type Service struct {
 	addTimeout, readTimeout int
 }
 
-func NewService(c *torrent.Client, rep repository.TorrentsRepository, addTimeout, readTimeout int) *Service {
+func NewService(c *torrent.Client, rep storage.TorrentsRepository, addTimeout, readTimeout int) *Service {
 	l := slog.With("component", "torrent-service")
 	return &Service{
 		log:             l,
