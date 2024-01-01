@@ -79,7 +79,7 @@ type Stats struct {
 	gTime time.Time
 }
 
-func newStats() *Stats {
+func NewStats() *Stats {
 	return &Stats{
 		gTime:    time.Now(),
 		torrents: make(map[string]*torrent.Torrent),

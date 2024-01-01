@@ -29,7 +29,7 @@ var apiStatusHandler = func(fc *filecache.Cache, ss *service.Stats) gin.HandlerF
 	}
 }
 
-// var apiServersHandler = func(ss []*torrent.Server) gin.HandlerFunc {
+// var apiServersHandler = func(ss []*service.Server) gin.HandlerFunc {
 // 	return func(ctx *gin.Context) {
 // 		var infos []*torrent.ServerInfo
 // 		for _, s := range ss {
@@ -39,7 +39,7 @@ var apiStatusHandler = func(fc *filecache.Cache, ss *service.Stats) gin.HandlerF
 // 	}
 // }
 
-// var apiRoutesHandler = func(ss *torrent.Stats) gin.HandlerFunc {
+// var apiRoutesHandler = func(ss *service.Stats) gin.HandlerFunc {
 // 	return func(ctx *gin.Context) {
 // 		s := ss.RoutesStats()
 // 		sort.Sort(torrent.ByName(s))
@@ -47,7 +47,7 @@ var apiStatusHandler = func(fc *filecache.Cache, ss *service.Stats) gin.HandlerF
 // 	}
 // }
 
-// var apiAddTorrentHandler = func(s *torrent.Service) gin.HandlerFunc {
+// var apiAddTorrentHandler = func(s *service.Service) gin.HandlerFunc {
 // 	return func(ctx *gin.Context) {
 // 		route := ctx.Param("route")
 
@@ -66,7 +66,7 @@ var apiStatusHandler = func(fc *filecache.Cache, ss *service.Stats) gin.HandlerF
 // 	}
 // }
 
-// var apiDelTorrentHandler = func(s *torrent.Service) gin.HandlerFunc {
+// var apiDelTorrentHandler = func(s *service.Service) gin.HandlerFunc {
 // 	return func(ctx *gin.Context) {
 // 		route := ctx.Param("route")
 // 		hash := ctx.Param("torrent_hash")
