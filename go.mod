@@ -27,7 +27,7 @@ require (
 	github.com/rs/zerolog v1.31.0
 	github.com/shurcooL/httpfs v0.0.0-20230704072500-f1e31cf0ba5c
 	github.com/stretchr/testify v1.8.4
-	github.com/urfave/cli/v2 v2.27.0
+	github.com/urfave/cli/v2 v2.27.1
 	github.com/willscott/go-nfs v0.0.1
 	golang.org/x/exp v0.0.0-20231226003508-02704c960a9b
 	golang.org/x/net v0.19.0
