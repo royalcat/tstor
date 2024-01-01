@@ -17,8 +17,13 @@ import (
 	"github.com/anacrolix/torrent/storage"
 )
 
+type FileStorageDeleter interface {
+	storage.ClientImplCloser
+	DeleteFile(file *torrent.File) error
+}
+
 // NewFileStorage creates a new ClientImplCloser that stores files using the OS native filesystem.
-func NewFileStorage(baseDir string, pc storage.PieceCompletion) *FileStorage {
+func NewFileStorage(baseDir string, pc storage.PieceCompletion) FileStorageDeleter {
 	return &FileStorage{baseDir: baseDir, pieceCompletion: pc}
 }
 
@@ -46,6 +51,13 @@ func (fs *FileStorage) DeleteFile(file *torrent.File) error {
 	torrentDir := fs.torrentDir(info, infoHash)
 	relFilePath := fs.filePath(file.FileInfo())
 	filePath := path.Join(torrentDir, relFilePath)
+	for i := file.BeginPieceIndex(); i < file.EndPieceIndex(); i++ {
+		pk := metainfo.PieceKey{InfoHash: infoHash, Index: i}
+		err := fs.pieceCompletion.Set(pk, false)
+		if err != nil {
+			return err
+		}
+	}
 	return os.Remove(filePath)
 }
 

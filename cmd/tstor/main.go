@@ -176,7 +176,7 @@ func run(configPath string) error {
 	go func() {
 		logFilename := filepath.Join(conf.Log.Path, dlog.FileName)
 
-		err = http.New(nil, nil, ts, logFilename, conf)
+		err = http.New(nil, service.NewStats(), ts, logFilename, conf)
 		log.Error().Err(err).Msg("error initializing HTTP server")
 	}()
 

@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"path"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -54,11 +55,21 @@ func (fs *TorrentFs) files() (map[string]*torrentFile, error) {
 		fs.filesCache = make(map[string]*torrentFile)
 		for _, file := range files {
 
-			if slices.Contains(excludedFiles, file.Path()) {
+			p := file.Path()
+
+			if slices.Contains(excludedFiles, p) {
+				continue
+			}
+			if strings.Contains(p, "/.pad/") {
 				continue
 			}
 
-			p := AbsPath(file.Path())
+			p = AbsPath(file.Path())
+
+			// TODO make optional
+			// removing the torrent root directory of same name  as torrent
+			p, _ = strings.CutPrefix(p, "/"+fs.t.Name()+"/")
+			p = AbsPath(p)
 
 			fs.filesCache[p] = &torrentFile{
 				name:    path.Base(p),

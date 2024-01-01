@@ -9,7 +9,7 @@ import (
 	"github.com/anacrolix/torrent/storage"
 )
 
-func SetupStorage(cfg config.TorrentClient) (*FileStorage, storage.PieceCompletion, error) {
+func SetupStorage(cfg config.TorrentClient) (storage.ClientImplCloser, storage.PieceCompletion, error) {
 	pcp := filepath.Join(cfg.DataFolder, "piece-completion")
 	if err := os.MkdirAll(pcp, 0744); err != nil {
 		return nil, nil, fmt.Errorf("error creating piece completion folder: %w", err)
@@ -39,13 +39,19 @@ func SetupStorage(cfg config.TorrentClient) (*FileStorage, storage.PieceCompleti
 	// rp := storage.NewResourcePieces(fc.AsResourceProvider())
 	// st := &stc{rp}
 
-	filesDir := filepath.Join(cfg.DataFolder, "files")
-	if err := os.MkdirAll(pcp, 0744); err != nil {
+	// filesDir := filepath.Join(cfg.DataFolder, "files")
+	// if err := os.MkdirAll(filesDir, 0744); err != nil {
+	// 	return nil, nil, fmt.Errorf("error creating piece completion folder: %w", err)
+	// }
+
+	//st := NewFileStorage(filesDir, pc)
+
+	piecesDir := filepath.Join(cfg.DataFolder, "pieces")
+	if err := os.MkdirAll(piecesDir, 0744); err != nil {
 		return nil, nil, fmt.Errorf("error creating piece completion folder: %w", err)
 	}
 
-	// st := storage.NewMMapWithCompletion(filesDir, pc)
-	st := NewFileStorage(filesDir, pc)
+	st := storage.NewMMapWithCompletion(piecesDir, pc)
 
 	return st, pc, nil
 }

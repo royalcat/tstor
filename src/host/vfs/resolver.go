@@ -204,6 +204,9 @@ func listDirFromFiles[F File](m map[string]F, name string) ([]fs.DirEntry, error
 
 		}
 	}
+	slices.SortStableFunc(out, func(de1, de2 fs.DirEntry) int {
+		return strings.Compare(de1.Name(), de2.Name())
+	})
 	out = slices.CompactFunc(out, func(de1, de2 fs.DirEntry) bool {
 		return de1.Name() == de2.Name()
 	})

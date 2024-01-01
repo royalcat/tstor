@@ -7,6 +7,7 @@ import (
 
 	"github.com/anacrolix/torrent"
 	"github.com/anacrolix/torrent/metainfo"
+	atstorage "github.com/anacrolix/torrent/storage"
 	"github.com/philippgille/gokv"
 	"github.com/philippgille/gokv/badgerdb"
 	"github.com/philippgille/gokv/encoding"
@@ -17,7 +18,7 @@ type TorrentsRepository interface {
 	ExcludedFiles(hash metainfo.Hash) ([]string, error)
 }
 
-func NewTorrentMetaRepository(metaDir string, storage *FileStorage) (TorrentsRepository, error) {
+func NewTorrentMetaRepository(metaDir string, storage atstorage.ClientImplCloser) (TorrentsRepository, error) {
 	excludedFilesStore, err := badgerdb.NewStore(badgerdb.Options{
 		Dir:   filepath.Join(metaDir, "excluded-files"),
 		Codec: encoding.JSON,
@@ -38,7 +39,7 @@ func NewTorrentMetaRepository(metaDir string, storage *FileStorage) (TorrentsRep
 type torrentRepositoryImpl struct {
 	m             sync.RWMutex
 	excludedFiles gokv.Store
-	storage       *FileStorage
+	storage       atstorage.ClientImplCloser
 }
 
 var ErrNotFound = errors.New("not found")
@@ -58,9 +59,11 @@ func (r *torrentRepositoryImpl) ExcludeFile(file *torrent.File) error {
 	}
 	excludedFiles = unique(append(excludedFiles, file.Path()))
 
-	err = r.storage.DeleteFile(file)
-	if err != nil {
-		return err
+	if storage, ok := r.storage.(FileStorageDeleter); ok {
+		err = storage.DeleteFile(file)
+		if err != nil {
+			return err
+		}
 	}
 
 	return r.excludedFiles.Set(hash.AsString(), excludedFiles)
